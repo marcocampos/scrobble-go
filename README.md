@@ -393,6 +393,26 @@ scrobble.go/
 └── README.md
 ```
 
+## Contributing
+
+Contributions are welcome. Please follow these steps:
+
+1. Fork the repository and create a branch from `main`.
+2. Install the pre-commit hook:
+   ```sh
+   go install github.com/mrz1836/go-pre-commit/cmd/go-pre-commit@latest
+   go-pre-commit install
+   ```
+3. Make your changes. Add or update tests as appropriate.
+4. Ensure all checks pass before opening a pull request:
+   ```sh
+   go-pre-commit run --all-files   # formatting, linting, mod tidy
+   go test ./...                   # unit tests
+   ```
+5. Open a pull request against `main` with a clear description of what the change does and why.
+
+Please keep pull requests focused — one feature or fix per PR. For larger changes, open an issue first to discuss the approach.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
