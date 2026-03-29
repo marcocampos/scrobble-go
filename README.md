@@ -2,6 +2,10 @@
 
 > **AI-Assisted Project** — This project is designed and implemented with the assistance of AI and large language models (LLMs). All code, documentation, and configurations have been developed collaboratively with AI tools.
 
+[![CI](https://github.com/marcocampos/scrobble-go/actions/workflows/ci.yml/badge.svg)](https://github.com/marcocampos/scrobble-go/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/marcocampos/scrobble-go/branch/main/graph/badge.svg)](https://codecov.io/gh/marcocampos/scrobble-go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/marcocampos/scrobble-go/lastfm.svg)](https://pkg.go.dev/github.com/marcocampos/scrobble-go/lastfm)
+
 A Go client for the [Last.fm API](https://www.last.fm/api) (and compatible networks such as [Libre.fm](https://libre.fm)).
 
 A port of [pylast](https://github.com/pylast/pylast) to Go.
@@ -12,7 +16,7 @@ A port of [pylast](https://github.com/pylast/pylast) to Go.
 go get github.com/marcocampos/scrobble-go/lastfm
 ```
 
-Requires Go 1.21 or later.
+Requires Go 1.23 or later.
 
 ## Quick start
 
