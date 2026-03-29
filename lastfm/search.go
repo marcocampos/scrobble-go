@@ -82,7 +82,7 @@ func (s *ArtistSearch) GetTotalResultCount(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("ArtistSearch.GetTotalResultCount: %w", err)
 	}
-	return parseInt(extract(doc, "opensearch:totalResults")), nil
+	return parseInt(extract(doc, "totalResults")), nil
 }
 
 // ── Album search ──────────────────────────────────────────────────────────────
@@ -161,7 +161,7 @@ func (s *AlbumSearch) GetTotalResultCount(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("AlbumSearch.GetTotalResultCount: %w", err)
 	}
-	return parseInt(extract(doc, "opensearch:totalResults")), nil
+	return parseInt(extract(doc, "totalResults")), nil
 }
 
 // ── Track search ──────────────────────────────────────────────────────────────
@@ -248,5 +248,5 @@ func (s *TrackSearch) GetTotalResultCount(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("TrackSearch.GetTotalResultCount: %w", err)
 	}
-	return parseInt(extract(doc, "opensearch:totalResults")), nil
+	return parseInt(extract(doc, "totalResults")), nil
 }

@@ -252,6 +252,48 @@ func TestArtistSearch_All_PropagatesError(t *testing.T) {
 	t.Fatal("expected at least one iteration with an error")
 }
 
+func TestArtistSearch_GetTotalResultCount(t *testing.T) {
+	srv := serveXML(artistSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	count, err := c.SearchForArtist("iron maiden").GetTotalResultCount(context.Background())
+	if err != nil {
+		t.Fatalf("GetTotalResultCount: %v", err)
+	}
+	if count != 5 {
+		t.Errorf("count = %d, want 5", count)
+	}
+}
+
+func TestAlbumSearch_GetTotalResultCount(t *testing.T) {
+	srv := serveXML(albumSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	count, err := c.SearchForAlbum("dance of death").GetTotalResultCount(context.Background())
+	if err != nil {
+		t.Fatalf("GetTotalResultCount: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("count = %d, want 2", count)
+	}
+}
+
+func TestTrackSearch_GetTotalResultCount(t *testing.T) {
+	srv := serveXML(trackSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	count, err := c.SearchForTrack("Iron Maiden", "The Nomad").GetTotalResultCount(context.Background())
+	if err != nil {
+		t.Fatalf("GetTotalResultCount: %v", err)
+	}
+	if count != 3 {
+		t.Errorf("count = %d, want 3", count)
+	}
+}
+
 func TestTrackSearch_EmptyArtist(t *testing.T) {
 	srv := serveXML(trackSearchXML)
 	defer srv.Close()
