@@ -1,4 +1,4 @@
-# scrobble.go
+# scrobble-go
 
 > **AI-Assisted Project** — This project is designed and implemented with the assistance of AI and large language models (LLMs). All code, documentation, and configurations have been developed collaboratively with AI tools.
 
