@@ -35,6 +35,7 @@ type Client struct {
 	httpClient *http.Client
 	cache      CacheBackend
 	rateLimit  bool
+	maxRetries int
 
 	mu       sync.Mutex
 	lastCall time.Time
@@ -74,6 +75,17 @@ func WithRateLimit() Option {
 // transport customisation, and for testing).
 func WithHTTPClient(hc *http.Client) Option {
 	return func(c *Client) { c.httpClient = hc }
+}
+
+// WithRetry enables automatic retries on transient errors (network failures
+// and HTTP 502/503/504). The default is 3 attempts with exponential backoff
+// starting at 100 ms and ±25% jitter. Pass a value ≥ 1 to override.
+func WithRetry(maxAttempts ...int) Option {
+	attempts := 3
+	if len(maxAttempts) > 0 && maxAttempts[0] >= 1 {
+		attempts = maxAttempts[0]
+	}
+	return func(c *Client) { c.maxRetries = attempts }
 }
 
 // newClient creates a Client for the given network, applying all options.
