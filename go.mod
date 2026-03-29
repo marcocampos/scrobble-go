@@ -1,6 +1,6 @@
 module github.com/marcocampos/scrobble-go
 
-go 1.26.1
+go 1.23
 
 require go.etcd.io/bbolt v1.4.3
 
