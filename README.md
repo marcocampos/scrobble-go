@@ -1,6 +1,6 @@
-> **AI-Assisted Project** — This project is designed and implemented with the assistance of AI and large language models (LLMs). All code, documentation, and configurations have been developed collaboratively with AI tools.
-
 # scrobble.go
+
+> **AI-Assisted Project** — This project is designed and implemented with the assistance of AI and large language models (LLMs). All code, documentation, and configurations have been developed collaboratively with AI tools.
 
 A Go client for the [Last.fm API](https://www.last.fm/api) (and compatible networks such as [Libre.fm](https://libre.fm)).
 
