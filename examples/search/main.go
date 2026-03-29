@@ -61,18 +61,29 @@ func main() {
 func searchArtists(ctx context.Context, client *lastfm.Client, query string, pages int) {
 	s := client.SearchForArtist(query)
 	total := 0
-	for p := 1; p <= pages; p++ {
-		results, err := s.GetPage(ctx, p)
-		if err != nil {
-			log.Fatalf("page %d: %v", p, err)
-		}
-		if len(results) == 0 {
-			fmt.Println("No more results.")
-			break
-		}
-		for _, a := range results {
-			fmt.Printf("  %s\n", a.Name)
+	if pages == 0 {
+		// Iterator API: range over all results across all pages.
+		for artist, err := range s.All(ctx) {
+			if err != nil {
+				log.Fatalf("All: %v", err)
+			}
+			fmt.Printf("  %s\n", artist.Name)
 			total++
+		}
+	} else {
+		for p := 1; p <= pages; p++ {
+			results, err := s.GetPage(ctx, p)
+			if err != nil {
+				log.Fatalf("page %d: %v", p, err)
+			}
+			if len(results) == 0 {
+				fmt.Println("No more results.")
+				break
+			}
+			for _, a := range results {
+				fmt.Printf("  %s\n", a.Name)
+				total++
+			}
 		}
 	}
 	fmt.Printf("\n%d artist(s) shown.\n", total)
@@ -81,18 +92,28 @@ func searchArtists(ctx context.Context, client *lastfm.Client, query string, pag
 func searchAlbums(ctx context.Context, client *lastfm.Client, query string, pages int) {
 	s := client.SearchForAlbum(query)
 	total := 0
-	for p := 1; p <= pages; p++ {
-		results, err := s.GetPage(ctx, p)
-		if err != nil {
-			log.Fatalf("page %d: %v", p, err)
-		}
-		if len(results) == 0 {
-			fmt.Println("No more results.")
-			break
-		}
-		for _, al := range results {
-			fmt.Printf("  %-40s by %s\n", al.Title, al.Artist.Name)
+	if pages == 0 {
+		for album, err := range s.All(ctx) {
+			if err != nil {
+				log.Fatalf("All: %v", err)
+			}
+			fmt.Printf("  %-40s by %s\n", album.Title, album.Artist.Name)
 			total++
+		}
+	} else {
+		for p := 1; p <= pages; p++ {
+			results, err := s.GetPage(ctx, p)
+			if err != nil {
+				log.Fatalf("page %d: %v", p, err)
+			}
+			if len(results) == 0 {
+				fmt.Println("No more results.")
+				break
+			}
+			for _, al := range results {
+				fmt.Printf("  %-40s by %s\n", al.Title, al.Artist.Name)
+				total++
+			}
 		}
 	}
 	fmt.Printf("\n%d album(s) shown.\n", total)
@@ -101,18 +122,28 @@ func searchAlbums(ctx context.Context, client *lastfm.Client, query string, page
 func searchTracks(ctx context.Context, client *lastfm.Client, artist, query string, pages int) {
 	s := client.SearchForTrack(artist, query)
 	total := 0
-	for p := 1; p <= pages; p++ {
-		results, err := s.GetPage(ctx, p)
-		if err != nil {
-			log.Fatalf("page %d: %v", p, err)
-		}
-		if len(results) == 0 {
-			fmt.Println("No more results.")
-			break
-		}
-		for _, t := range results {
-			fmt.Printf("  %-35s by %s\n", t.Title, t.Artist.Name)
+	if pages == 0 {
+		for track, err := range s.All(ctx) {
+			if err != nil {
+				log.Fatalf("All: %v", err)
+			}
+			fmt.Printf("  %-35s by %s\n", track.Title, track.Artist.Name)
 			total++
+		}
+	} else {
+		for p := 1; p <= pages; p++ {
+			results, err := s.GetPage(ctx, p)
+			if err != nil {
+				log.Fatalf("page %d: %v", p, err)
+			}
+			if len(results) == 0 {
+				fmt.Println("No more results.")
+				break
+			}
+			for _, t := range results {
+				fmt.Printf("  %-35s by %s\n", t.Title, t.Artist.Name)
+				total++
+			}
 		}
 	}
 	fmt.Printf("\n%d track(s) shown.\n", total)

@@ -3,6 +3,7 @@ package lastfm
 import (
 	"context"
 	"fmt"
+	"iter"
 )
 
 // ── Artist search ─────────────────────────────────────────────────────────────
@@ -45,6 +46,33 @@ func (s *ArtistSearch) GetPage(ctx context.Context, page int) ([]*Artist, error)
 		}
 	}
 	return result, nil
+}
+
+// All returns an iterator over every artist across all pages.
+// Use it with a range-over-func loop (Go 1.23+):
+//
+//	for artist, err := range search.All(ctx) {
+//	    if err != nil { /* handle */ }
+//	    fmt.Println(artist.Name)
+//	}
+func (s *ArtistSearch) All(ctx context.Context) iter.Seq2[*Artist, error] {
+	return func(yield func(*Artist, error) bool) {
+		for page := 1; ; page++ {
+			results, err := s.GetPage(ctx, page)
+			if err != nil {
+				yield(nil, err)
+				return
+			}
+			if len(results) == 0 {
+				return
+			}
+			for _, a := range results {
+				if !yield(a, nil) {
+					return
+				}
+			}
+		}
+	}
 }
 
 // GetTotalResultCount returns the total number of matching artists.
@@ -97,6 +125,33 @@ func (s *AlbumSearch) GetPage(ctx context.Context, page int) ([]*Album, error) {
 		}
 	}
 	return result, nil
+}
+
+// All returns an iterator over every album across all pages.
+// Use it with a range-over-func loop (Go 1.23+):
+//
+//	for album, err := range search.All(ctx) {
+//	    if err != nil { /* handle */ }
+//	    fmt.Println(album.Title)
+//	}
+func (s *AlbumSearch) All(ctx context.Context) iter.Seq2[*Album, error] {
+	return func(yield func(*Album, error) bool) {
+		for page := 1; ; page++ {
+			results, err := s.GetPage(ctx, page)
+			if err != nil {
+				yield(nil, err)
+				return
+			}
+			if len(results) == 0 {
+				return
+			}
+			for _, a := range results {
+				if !yield(a, nil) {
+					return
+				}
+			}
+		}
+	}
 }
 
 // GetTotalResultCount returns the total number of matching albums.
@@ -154,6 +209,33 @@ func (s *TrackSearch) GetPage(ctx context.Context, page int) ([]*Track, error) {
 		}
 	}
 	return result, nil
+}
+
+// All returns an iterator over every track across all pages.
+// Use it with a range-over-func loop (Go 1.23+):
+//
+//	for track, err := range search.All(ctx) {
+//	    if err != nil { /* handle */ }
+//	    fmt.Println(track.Title)
+//	}
+func (s *TrackSearch) All(ctx context.Context) iter.Seq2[*Track, error] {
+	return func(yield func(*Track, error) bool) {
+		for page := 1; ; page++ {
+			results, err := s.GetPage(ctx, page)
+			if err != nil {
+				yield(nil, err)
+				return
+			}
+			if len(results) == 0 {
+				return
+			}
+			for _, t := range results {
+				if !yield(t, nil) {
+					return
+				}
+			}
+		}
+	}
 }
 
 // GetTotalResultCount returns the total number of matching tracks.
