@@ -168,7 +168,7 @@ func (r *apiRequest) download(ctx context.Context) (string, error) {
 			UnderlyingError: err,
 		}
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusInternalServerError ||
 		resp.StatusCode == http.StatusBadGateway ||

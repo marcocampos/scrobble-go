@@ -168,8 +168,3 @@ func (c *Client) delayCall() {
 	}
 	c.lastCall = time.Now()
 }
-
-// wsAuth returns (apiKey, apiSecret, sessionKey) for signing requests.
-func (c *Client) wsAuth() (string, string, string) {
-	return c.net.APIKey, c.net.APISecret, c.net.SessionKey
-}

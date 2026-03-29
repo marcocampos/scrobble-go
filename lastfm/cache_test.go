@@ -39,7 +39,7 @@ func TestBoltCache_GetSet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewBoltCache: %v", err)
 	}
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 
 	if _, ok := c.Get("missing"); ok {
 		t.Error("Get on empty cache should return false")
@@ -64,14 +64,16 @@ func TestBoltCache_Persistence(t *testing.T) {
 		t.Fatalf("NewBoltCache: %v", err)
 	}
 	c1.Set("persisted", "hello")
-	c1.Close()
+	if err := c1.Close(); err != nil {
+		t.Errorf("c1.Close: %v", err)
+	}
 
 	// Read back in a new instance.
 	c2, err := NewBoltCache(path)
 	if err != nil {
 		t.Fatalf("NewBoltCache (reopen): %v", err)
 	}
-	defer c2.Close()
+	defer func() { _ = c2.Close() }()
 
 	v, ok := c2.Get("persisted")
 	if !ok {
