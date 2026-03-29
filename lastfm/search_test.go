@@ -2,6 +2,8 @@ package lastfm
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -125,6 +127,129 @@ func TestAlbumSearch_GetNextPage(t *testing.T) {
 	if results[0].Title != "Dance of Death" {
 		t.Errorf("Title = %q", results[0].Title)
 	}
+}
+
+// ── All() iterator tests ──────────────────────────────────────────────────────
+
+const emptyArtistSearchXML = `<lfm status="ok">
+  <results for="nothing">
+    <opensearch:totalResults>0</opensearch:totalResults>
+    <artistmatches></artistmatches>
+  </results>
+</lfm>`
+
+const emptyAlbumSearchXML = `<lfm status="ok">
+  <results for="nothing">
+    <opensearch:totalResults>0</opensearch:totalResults>
+    <albummatches></albummatches>
+  </results>
+</lfm>`
+
+const emptyTrackSearchXML = `<lfm status="ok">
+  <results for="nothing">
+    <opensearch:totalResults>0</opensearch:totalResults>
+    <trackmatches></trackmatches>
+  </results>
+</lfm>`
+
+// servePages returns a TLS server that responds with pages[0] on the first
+// request, pages[1] on the second, and so on. The last entry is repeated for
+// any additional requests.
+func servePages(pages ...string) *httptest.Server {
+	calls := 0
+	return httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/xml; charset=utf-8")
+		idx := calls
+		if idx >= len(pages) {
+			idx = len(pages) - 1
+		}
+		calls++
+		_, _ = w.Write([]byte(pages[idx]))
+	}))
+}
+
+func TestArtistSearch_All_YieldsAllResults(t *testing.T) {
+	// Page 1 returns 2 artists; page 2 returns empty → iterator stops.
+	srv := servePages(artistSearchXML, emptyArtistSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	var names []string
+	for artist, err := range c.SearchForArtist("iron maiden").All(context.Background()) {
+		if err != nil {
+			t.Fatalf("All: unexpected error: %v", err)
+		}
+		names = append(names, artist.Name)
+	}
+	if len(names) != 2 {
+		t.Errorf("got %d results, want 2", len(names))
+	}
+}
+
+func TestAlbumSearch_All_YieldsAllResults(t *testing.T) {
+	srv := servePages(albumSearchXML, emptyAlbumSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	var titles []string
+	for album, err := range c.SearchForAlbum("dance of death").All(context.Background()) {
+		if err != nil {
+			t.Fatalf("All: unexpected error: %v", err)
+		}
+		titles = append(titles, album.Title)
+	}
+	if len(titles) != 1 {
+		t.Errorf("got %d results, want 1", len(titles))
+	}
+}
+
+func TestTrackSearch_All_YieldsAllResults(t *testing.T) {
+	srv := servePages(trackSearchXML, emptyTrackSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	var titles []string
+	for track, err := range c.SearchForTrack("", "nomad").All(context.Background()) {
+		if err != nil {
+			t.Fatalf("All: unexpected error: %v", err)
+		}
+		titles = append(titles, track.Title)
+	}
+	if len(titles) != 2 {
+		t.Errorf("got %d results, want 2", len(titles))
+	}
+}
+
+func TestArtistSearch_All_StopsOnEarlyReturn(t *testing.T) {
+	srv := servePages(artistSearchXML, emptyArtistSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	count := 0
+	for _, err := range c.SearchForArtist("iron maiden").All(context.Background()) {
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		count++
+		break // stop after first result
+	}
+	if count != 1 {
+		t.Errorf("expected early exit after 1 result, got %d", count)
+	}
+}
+
+func TestArtistSearch_All_PropagatesError(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	for _, err := range c.SearchForArtist("iron maiden").All(context.Background()) {
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		return
+	}
+	t.Fatal("expected at least one iteration with an error")
 }
 
 func TestTrackSearch_EmptyArtist(t *testing.T) {
