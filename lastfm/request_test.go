@@ -156,13 +156,28 @@ func TestAPIRequest_Execute_NetworkError(t *testing.T) {
 }
 
 func TestAPIRequest_Execute_WithRetryOption(t *testing.T) {
-	// Verify that a client built with WithRetry uses maxAttempts > 1 when
-	// executing a request (exercises the r.client.maxAttempts > 0 branch).
-	srv := serveXML(sampleArtistXML)
+	// Verify that WithRetry(2) is wired through execute(): the server returns
+	// HTTP 502 on the first call (retriable) then succeeds on the second.
+	// This exercises the r.client.maxAttempts > 0 branch and confirms the
+	// retry actually fires.
+	calls := 0
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if calls == 1 {
+			w.WriteHeader(http.StatusBadGateway) // 502 — retriable
+			return
+		}
+		w.Header().Set("Content-Type", "text/xml; charset=utf-8")
+		_, _ = w.Write([]byte(sampleArtistXML))
+	}))
 	defer srv.Close()
 
-	c := newTestClient(t, srv)
-	c.maxAttempts = 2 // equivalent to WithRetry(2)
+	c := NewLastFMClient("testapikey", "testapisecret",
+		WithHTTPClient(srv.Client()),
+		WithRetry(2),
+	)
+	c.net.WSHost = srv.Listener.Addr().String()
+	c.net.WSPath = "/"
 
 	r := newAPIRequest(c, "artist.getInfo", map[string]string{"artist": "Iron Maiden"})
 	doc, err := r.execute(context.Background(), false)
@@ -171,6 +186,9 @@ func TestAPIRequest_Execute_WithRetryOption(t *testing.T) {
 	}
 	if name := extract(doc, "name"); name != "Iron Maiden" {
 		t.Errorf("extract(name) = %q, want %q", name, "Iron Maiden")
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 server calls (1 retry), got %d", calls)
 	}
 }
 
