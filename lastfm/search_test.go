@@ -2,8 +2,6 @@ package lastfm
 
 import (
 	"context"
-	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
@@ -151,25 +149,6 @@ const emptyTrackSearchXML = `<lfm status="ok">
     <trackmatches></trackmatches>
   </results>
 </lfm>`
-
-// servePages returns a TLS server that responds with pages[0] on the first
-// request, pages[1] on the second, and so on. The last entry is repeated for
-// any additional requests. Panics if called with no pages.
-func servePages(pages ...string) *httptest.Server {
-	if len(pages) == 0 {
-		panic("servePages: at least one page response must be provided")
-	}
-	calls := 0
-	return httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/xml; charset=utf-8")
-		idx := calls
-		if idx >= len(pages) {
-			idx = len(pages) - 1
-		}
-		calls++
-		_, _ = w.Write([]byte(pages[idx]))
-	}))
-}
 
 func TestArtistSearch_All_YieldsAllResults(t *testing.T) {
 	// Page 1 returns 2 artists; page 2 returns empty → iterator stops.
@@ -361,36 +340,33 @@ func TestTrackSearch_GetTotalResultCount(t *testing.T) {
 	}
 }
 
-func TestArtistSearch_GetTotalResultCount_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.SearchForArtist("iron maiden").GetTotalResultCount(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
+func TestSearch_GetTotalResultCount_ErrorResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, c *Client) error
+	}{
+		{"ArtistSearch", func(ctx context.Context, c *Client) error {
+			_, err := c.SearchForArtist("iron maiden").GetTotalResultCount(ctx)
+			return err
+		}},
+		{"AlbumSearch", func(ctx context.Context, c *Client) error {
+			_, err := c.SearchForAlbum("dance of death").GetTotalResultCount(ctx)
+			return err
+		}},
+		{"TrackSearch", func(ctx context.Context, c *Client) error {
+			_, err := c.SearchForTrack("Iron Maiden", "The Nomad").GetTotalResultCount(ctx)
+			return err
+		}},
 	}
-}
-
-func TestAlbumSearch_GetTotalResultCount_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.SearchForAlbum("dance of death").GetTotalResultCount(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestTrackSearch_GetTotalResultCount_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.SearchForTrack("Iron Maiden", "The Nomad").GetTotalResultCount(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
+			c := newTestClient(t, srv)
+			if err := tt.call(context.Background(), c); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
 	}
 }
 

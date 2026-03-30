@@ -169,58 +169,32 @@ func TestArtist_GetURL(t *testing.T) {
 	}
 }
 
-func TestArtist_GetMBID_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetArtist("Iron Maiden").GetMBID(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
+func TestArtist_ErrorResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, a *Artist) error
+	}{
+		{"GetMBID", func(ctx context.Context, a *Artist) error { _, err := a.GetMBID(ctx); return err }},
+		{"GetListenerCount", func(ctx context.Context, a *Artist) error { _, err := a.GetListenerCount(ctx); return err }},
+		{"GetPlaycount", func(ctx context.Context, a *Artist) error { _, err := a.GetPlaycount(ctx); return err }},
+		{"GetUserPlaycount", func(ctx context.Context, a *Artist) error { _, err := a.GetUserPlaycount(ctx); return err }},
+		{"GetSimilar", func(ctx context.Context, a *Artist) error { _, err := a.GetSimilar(ctx, 5); return err }},
+		{"AddTags", func(ctx context.Context, a *Artist) error { return a.AddTags(ctx, []string{"metal"}) }},
+		{"RemoveTag", func(ctx context.Context, a *Artist) error { return a.RemoveTag(ctx, "metal") }},
+		{"GetTags", func(ctx context.Context, a *Artist) error { _, err := a.GetTags(ctx); return err }},
+		{"GetTopTags", func(ctx context.Context, a *Artist) error { _, err := a.GetTopTags(ctx, 5); return err }},
+		{"GetTopAlbums", func(ctx context.Context, a *Artist) error { _, err := a.GetTopAlbums(ctx, 0); return err }},
+		{"GetTopTracks", func(ctx context.Context, a *Artist) error { _, err := a.GetTopTracks(ctx, 0); return err }},
 	}
-}
-
-func TestArtist_GetListenerCount_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetArtist("Iron Maiden").GetListenerCount(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestArtist_GetPlaycount_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetArtist("Iron Maiden").GetPlaycount(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestArtist_GetUserPlaycount_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetArtist("Iron Maiden").GetUserPlaycount(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestArtist_GetSimilar_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetArtist("Iron Maiden").GetSimilar(context.Background(), 5)
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
+			c := newTestClient(t, srv)
+			if err := tt.call(context.Background(), c.GetArtist("Iron Maiden")); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
 	}
 }
 
@@ -235,72 +209,6 @@ func TestArtist_GetTopAlbums_WithLimit(t *testing.T) {
 	}
 	if len(albums) != 2 {
 		t.Fatalf("len(albums) = %d, want 2", len(albums))
-	}
-}
-
-func TestArtist_AddTags_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	err := c.GetArtist("Iron Maiden").AddTags(context.Background(), []string{"metal"})
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestArtist_RemoveTag_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	err := c.GetArtist("Iron Maiden").RemoveTag(context.Background(), "metal")
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestArtist_GetTags_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetArtist("Iron Maiden").GetTags(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestArtist_GetTopTags_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetArtist("Iron Maiden").GetTopTags(context.Background(), 5)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestArtist_GetTopAlbums_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetArtist("Iron Maiden").GetTopAlbums(context.Background(), 0)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestArtist_GetTopTracks_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetArtist("Iron Maiden").GetTopTracks(context.Background(), 0)
-	if err == nil {
-		t.Fatal("expected error, got nil")
 	}
 }
 

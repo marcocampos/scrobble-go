@@ -251,80 +251,28 @@ func TestAlbum_getWiki_DefaultSection(t *testing.T) {
 	}
 }
 
-func TestAlbum_GetMBID_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetAlbum("Iron Maiden", "Dance of Death").GetMBID(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
+func TestAlbum_ErrorPaths(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, a *Album) error
+	}{
+		{"GetMBID", func(ctx context.Context, a *Album) error { _, err := a.GetMBID(ctx); return err }},
+		{"GetListenerCount", func(ctx context.Context, a *Album) error { _, err := a.GetListenerCount(ctx); return err }},
+		{"GetPlaycount", func(ctx context.Context, a *Album) error { _, err := a.GetPlaycount(ctx); return err }},
+		{"GetUserPlaycount", func(ctx context.Context, a *Album) error { _, err := a.GetUserPlaycount(ctx); return err }},
+		{"GetCoverImage", func(ctx context.Context, a *Album) error { _, err := a.GetCoverImage(ctx, SizeLarge); return err }},
+		{"GetTracks", func(ctx context.Context, a *Album) error { _, err := a.GetTracks(ctx); return err }},
+		{"GetWikiSummary", func(ctx context.Context, a *Album) error { _, err := a.GetWikiSummary(ctx); return err }},
 	}
-}
-
-func TestAlbum_GetListenerCount_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetAlbum("Iron Maiden", "Dance of Death").GetListenerCount(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestAlbum_GetPlaycount_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetAlbum("Iron Maiden", "Dance of Death").GetPlaycount(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestAlbum_GetUserPlaycount_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetAlbum("Iron Maiden", "Dance of Death").GetUserPlaycount(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestAlbum_GetCoverImage_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetAlbum("Iron Maiden", "Dance of Death").GetCoverImage(context.Background(), SizeLarge)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestAlbum_GetTracks_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetAlbum("Iron Maiden", "Dance of Death").GetTracks(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
-
-func TestAlbum_GetWikiSummary_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetAlbum("Iron Maiden", "Dance of Death").GetWikiSummary(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
+			c := newTestClient(t, srv)
+			if err := tt.call(context.Background(), c.GetAlbum("Iron Maiden", "Dance of Death")); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
 	}
 }
 
