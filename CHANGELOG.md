@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-31
+
 ### Changed
 
 - **BREAKING:** `GetListenerCount`, `GetPlaycount`, and `GetUserPlaycount` on `Artist`, `Album`, and `Track` now return `int64` instead of `float64`. This avoids silent precision loss for large counts (above 2^53) and matches the underlying `Info` struct field types.
@@ -63,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions CI pipeline (build, test, lint)
 - GitHub Actions CD pipeline (automatic GitHub Release on version tag)
 
-[Unreleased]: https://github.com/marcocampos/scrobble-go/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/marcocampos/scrobble-go/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/marcocampos/scrobble-go/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/marcocampos/scrobble-go/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/marcocampos/scrobble-go/releases/tag/v0.1.0

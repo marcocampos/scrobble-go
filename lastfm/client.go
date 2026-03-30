@@ -11,7 +11,7 @@ const (
 	// delayTime is the minimum gap between API calls mandated by Last.fm ToS §4.4.
 	delayTime = 200 * time.Millisecond
 
-	version = "0.2.0"
+	version = "0.3.0"
 )
 
 // network holds the static configuration for a Last.fm-compatible service.
