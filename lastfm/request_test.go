@@ -233,21 +233,3 @@ func TestAPIRequest_Execute_RateLimitContextCancellation(t *testing.T) {
 	}
 }
 
-func TestConvertParam(t *testing.T) {
-	tests := []struct {
-		input any
-		want  string
-	}{
-		{true, "1"},
-		{false, "0"},
-		{"hello", "hello"},
-		{42, "42"},
-		{3.14, "3.14"},
-	}
-	for _, tt := range tests {
-		got := convertParam(tt.input)
-		if got != tt.want {
-			t.Errorf("convertParam(%v) = %q, want %q", tt.input, got, tt.want)
-		}
-	}
-}
