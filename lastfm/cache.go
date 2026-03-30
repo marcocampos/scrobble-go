@@ -2,6 +2,7 @@ package lastfm
 
 import (
 	"sync"
+	"time"
 
 	bolt "go.etcd.io/bbolt"
 )
@@ -18,31 +19,74 @@ type CacheBackend interface {
 
 // ── MemoryCache ───────────────────────────────────────────────────────────────
 
-// MemoryCache is a thread-safe in-memory CacheBackend.
-// Entries are lost when the process exits; use BoltCache for persistence.
-type MemoryCache struct {
-	mu    sync.RWMutex
-	store map[string]string
+type memoryCacheEntry struct {
+	value     string
+	expiresAt time.Time // zero value means no expiry
 }
 
-// NewMemoryCache returns an initialised MemoryCache.
+// MemoryCache is a thread-safe in-memory CacheBackend.
+// Entries are lost when the process exits; use BoltCache for persistence.
+// When created with NewMemoryCacheWithTTL, entries expire after the given
+// duration and are lazily evicted on the next Get.
+type MemoryCache struct {
+	mu    sync.RWMutex
+	store map[string]memoryCacheEntry
+	ttl   time.Duration // <= 0 means no expiry
+}
+
+// NewMemoryCache returns an initialised MemoryCache with no TTL.
+// Entries are retained indefinitely. For long-running applications,
+// prefer NewMemoryCacheWithTTL to bound memory usage.
 func NewMemoryCache() *MemoryCache {
-	return &MemoryCache{store: make(map[string]string)}
+	return &MemoryCache{store: make(map[string]memoryCacheEntry)}
+}
+
+// NewMemoryCacheWithTTL returns a MemoryCache where entries expire after
+// the given duration. Expired entries are lazily evicted on the next Get.
+// A TTL of 0 or less disables expiry (equivalent to NewMemoryCache).
+func NewMemoryCacheWithTTL(ttl time.Duration) *MemoryCache {
+	return &MemoryCache{
+		store: make(map[string]memoryCacheEntry),
+		ttl:   ttl,
+	}
 }
 
 // Get implements CacheBackend.
 func (c *MemoryCache) Get(key string) (string, bool) {
 	c.mu.RLock()
-	defer c.mu.RUnlock()
-	v, ok := c.store[key]
-	return v, ok
+	e, ok := c.store[key]
+	c.mu.RUnlock()
+
+	if !ok {
+		return "", false
+	}
+	if e.expiresAt.IsZero() || !time.Now().After(e.expiresAt) {
+		return e.value, true
+	}
+
+	// Re-check under write lock to avoid deleting a freshly-updated value.
+	c.mu.Lock()
+	e, ok = c.store[key]
+	if ok && !e.expiresAt.IsZero() && time.Now().After(e.expiresAt) {
+		delete(c.store, key)
+		ok = false
+	}
+	c.mu.Unlock()
+	if !ok {
+		return "", false
+	}
+	return e.value, true
 }
 
 // Set implements CacheBackend.
 func (c *MemoryCache) Set(key, value string) {
+	e := memoryCacheEntry{value: value}
+	if c.ttl > 0 {
+		e.expiresAt = time.Now().Add(c.ttl)
+	}
 	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.store[key] = value
+	c.store[key] = e
+	c.mu.Unlock()
 }
 
 // ── BoltCache ─────────────────────────────────────────────────────────────────

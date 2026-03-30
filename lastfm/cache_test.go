@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestMemoryCache_GetSet(t *testing.T) {
@@ -42,6 +43,39 @@ func TestMemoryCache_Overwrite(t *testing.T) {
 	v, _ := c.Get("k")
 	if v != "v2" {
 		t.Errorf("Get = %q, want %q", v, "v2")
+	}
+}
+
+func TestMemoryCacheWithTTL_ExpiresEntries(t *testing.T) {
+	c := NewMemoryCacheWithTTL(50 * time.Millisecond)
+	c.Set("key", "value")
+
+	// Entry should be available immediately.
+	v, ok := c.Get("key")
+	if !ok || v != "value" {
+		t.Fatalf("Get immediately after Set: ok=%v, v=%q", ok, v)
+	}
+
+	// Poll until the entry expires, with a generous deadline.
+	deadline := time.Now().Add(500 * time.Millisecond)
+	for {
+		_, ok = c.Get("key")
+		if !ok {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("expected entry to expire within 500ms, but it did not")
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func TestMemoryCacheWithTTL_ZeroTTLNeverExpires(t *testing.T) {
+	c := NewMemoryCacheWithTTL(0)
+	c.Set("key", "value")
+	v, ok := c.Get("key")
+	if !ok || v != "value" {
+		t.Errorf("zero TTL should not expire: ok=%v, v=%q", ok, v)
 	}
 }
 
