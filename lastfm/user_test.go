@@ -219,36 +219,48 @@ func TestUser_GetNowPlaying_None(t *testing.T) {
 	}
 }
 
-func TestUser_GetInfo_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetUser("testuser").GetInfo(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
+func TestUser_ErrorResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, u *User) error
+	}{
+		{
+			name: "GetInfo_Error",
+			call: func(ctx context.Context, u *User) error {
+				_, err := u.GetInfo(ctx)
+				return err
+			},
+		},
+		{
+			name: "GetRecentTracks_Error",
+			call: func(ctx context.Context, u *User) error {
+				_, err := u.GetRecentTracks(ctx, 10, 0)
+				return err
+			},
+		},
+		{
+			name: "GetNowPlaying_Error",
+			call: func(ctx context.Context, u *User) error {
+				_, err := u.GetNowPlaying(ctx)
+				return err
+			},
+		},
 	}
-}
 
-func TestUser_GetRecentTracks_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
 
-	c := newTestClient(t, srv)
-	_, err := c.GetUser("testuser").GetRecentTracks(context.Background(), 10, 0)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-}
+			c := newTestClient(t, srv)
+			u := c.GetUser("testuser")
 
-func TestUser_GetNowPlaying_Error(t *testing.T) {
-	srv := serveXML(sampleErrorXML)
-	defer srv.Close()
-
-	c := newTestClient(t, srv)
-	_, err := c.GetUser("testuser").GetNowPlaying(context.Background())
-	if err == nil {
-		t.Fatal("expected error, got nil")
+			err := tt.call(context.Background(), u)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
 	}
 }
 
