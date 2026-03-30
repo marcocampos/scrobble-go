@@ -38,7 +38,7 @@ type Client struct {
 	rateLimit   bool
 	maxAttempts int
 
-	mu       sync.Mutex
+	mu       sync.RWMutex
 	lastCall time.Time
 }
 

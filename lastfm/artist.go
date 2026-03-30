@@ -46,8 +46,11 @@ type ArtistInfo struct {
 // that user's personal play count (UserPlaycount).
 func (a *Artist) GetInfo(ctx context.Context) (*ArtistInfo, error) {
 	params := a.baseParams()
-	if a.client.net.Username != "" {
-		params["username"] = a.client.net.Username
+	a.client.mu.RLock()
+	username := a.client.net.Username
+	a.client.mu.RUnlock()
+	if username != "" {
+		params["username"] = username
 	}
 	doc, err := newAPIRequest(a.client, "artist.getInfo", params).execute(ctx, true)
 	if err != nil {

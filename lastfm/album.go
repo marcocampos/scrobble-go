@@ -15,10 +15,13 @@ type Album struct {
 
 // newAlbum returns an Album bound to the given client.
 func newAlbum(artist, title string, c *Client) *Album {
+	c.mu.RLock()
+	username := c.net.Username
+	c.mu.RUnlock()
 	return &Album{
 		Artist:   newArtist(artist, c),
 		Title:    title,
-		username: c.net.Username,
+		username: username,
 		client:   c,
 	}
 }
@@ -61,7 +64,10 @@ type AlbumInfo struct {
 // that user's personal play count (UserPlaycount).
 func (a *Album) GetInfo(ctx context.Context) (*AlbumInfo, error) {
 	params := a.baseParams()
-	if username := a.client.net.Username; username != "" {
+	a.client.mu.RLock()
+	username := a.client.net.Username
+	a.client.mu.RUnlock()
+	if username != "" {
 		params["username"] = username
 	}
 	doc, err := newAPIRequest(a.client, "album.getInfo", params).execute(ctx, true)
