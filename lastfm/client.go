@@ -47,18 +47,30 @@ type Option func(*Client)
 
 // WithSessionKey sets a pre-existing session key, skipping automatic auth.
 func WithSessionKey(sk string) Option {
-	return func(c *Client) { c.net.SessionKey = sk }
+	return func(c *Client) {
+		c.mu.Lock()
+		c.net.SessionKey = sk
+		c.mu.Unlock()
+	}
 }
 
 // WithUsername sets the username used for mobile (password) authentication.
 func WithUsername(username string) Option {
-	return func(c *Client) { c.net.Username = username }
+	return func(c *Client) {
+		c.mu.Lock()
+		c.net.Username = username
+		c.mu.Unlock()
+	}
 }
 
 // WithPasswordHash sets the MD5 password hash used for mobile authentication.
 // Use MD5("yourpassword") to produce the value.
 func WithPasswordHash(hash string) Option {
-	return func(c *Client) { c.net.PasswordHash = hash }
+	return func(c *Client) {
+		c.mu.Lock()
+		c.net.PasswordHash = hash
+		c.mu.Unlock()
+	}
 }
 
 // WithCache enables response caching with the provided backend.
