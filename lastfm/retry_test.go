@@ -87,6 +87,20 @@ func TestWithRetry_ContextCancelledDuringBackoff(t *testing.T) {
 	}
 }
 
+func TestWithRetry_ZeroMaxAttempts(t *testing.T) {
+	calls := 0
+	err := withRetry(context.Background(), 0, func() error {
+		calls++
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if calls != 1 {
+		t.Errorf("expected fn to be called once when maxAttempts=0, got %d", calls)
+	}
+}
+
 // ── isRetriable ───────────────────────────────────────────────────────────────
 
 func TestIsRetriable(t *testing.T) {
@@ -113,6 +127,16 @@ func TestIsRetriable(t *testing.T) {
 }
 
 // ── retryDelay ────────────────────────────────────────────────────────────────
+
+func TestRetryDelay_LargeAttemptCapped(t *testing.T) {
+	// A very large attempt index would overflow int64; the cap should kick in.
+	d := retryDelay(100)
+	lo := time.Duration(float64(retryMaxDelay) * 0.75)
+	hi := time.Duration(float64(retryMaxDelay) * 1.25)
+	if d < lo || d > hi {
+		t.Errorf("retryDelay(100) = %v, want in [%v, %v]", d, lo, hi)
+	}
+}
 
 func TestRetryDelay_ExponentialGrowth(t *testing.T) {
 	d0 := retryDelay(0)
