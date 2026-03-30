@@ -9,11 +9,12 @@ import (
 
 // newTestClient returns a Client wired to the given TLS test server.
 // The server's own Client() is used so the self-signed cert is trusted.
-func newTestClient(t *testing.T, srv *httptest.Server) *Client {
+// Additional options (e.g. WithRetry) may be passed; WithHTTPClient is
+// applied last so the TLS client always takes effect.
+func newTestClient(t *testing.T, srv *httptest.Server, opts ...Option) *Client {
 	t.Helper()
-	c := NewLastFMClient("testapikey", "testapisecret",
-		WithHTTPClient(srv.Client()),
-	)
+	allOpts := append(opts, WithHTTPClient(srv.Client()))
+	c := NewLastFMClient("testapikey", "testapisecret", allOpts...)
 	// Point the client at the test server (TLS).
 	c.net.WSHost = srv.Listener.Addr().String()
 	c.net.WSPath = "/"
@@ -152,6 +153,38 @@ func TestAPIRequest_Execute_NetworkError(t *testing.T) {
 	}
 	if _, ok := err.(*NetworkError); !ok {
 		t.Errorf("expected *NetworkError, got %T: %v", err, err)
+	}
+}
+
+func TestAPIRequest_Execute_WithRetryOption(t *testing.T) {
+	// Verify that WithRetry(2) is wired through execute(): the server returns
+	// HTTP 502 on the first call (retriable) then succeeds on the second.
+	// This exercises the r.client.maxAttempts > 0 branch and confirms the
+	// retry actually fires.
+	calls := 0
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		if calls == 1 {
+			w.WriteHeader(http.StatusBadGateway) // 502 — retriable
+			return
+		}
+		w.Header().Set("Content-Type", "text/xml; charset=utf-8")
+		_, _ = w.Write([]byte(sampleArtistXML))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv, WithRetry(2))
+
+	r := newAPIRequest(c, "artist.getInfo", map[string]string{"artist": "Iron Maiden"})
+	doc, err := r.execute(context.Background(), false)
+	if err != nil {
+		t.Fatalf("execute: unexpected error: %v", err)
+	}
+	if name := extract(doc, "name"); name != "Iron Maiden" {
+		t.Errorf("extract(name) = %q, want %q", name, "Iron Maiden")
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 server calls (1 retry), got %d", calls)
 	}
 }
 

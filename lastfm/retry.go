@@ -13,6 +13,16 @@ const (
 	retryJitter    = 0.25 // ±25% jitter applied to each delay
 )
 
+// backoffTimerFn returns a (channel, stopFunc) pair for the retry backoff.
+// It is a variable so tests can inject a fake timer that can make Stop
+// return false (simulating an already-fired timer) while still allowing
+// ctx.Done() to deterministically win the select, without relying on
+// real wall-clock timing.
+var backoffTimerFn = func(d time.Duration) (<-chan time.Time, func() bool) {
+	t := time.NewTimer(d)
+	return t.C, t.Stop
+}
+
 // withRetry calls fn up to maxAttempts times, retrying on transient errors
 // (NetworkError and HTTP 502/503/504). It uses exponential backoff starting at
 // retryBaseDelay with ±retryJitter jitter. Non-retriable errors (WSError,
@@ -36,14 +46,14 @@ func withRetry(ctx context.Context, maxAttempts int, fn func() error) error {
 			break
 		}
 
-		timer := time.NewTimer(retryDelay(attempt))
+		timerC, stopTimer := backoffTimerFn(retryDelay(attempt))
 		select {
 		case <-ctx.Done():
-			if !timer.Stop() {
-				<-timer.C
+			if !stopTimer() {
+				<-timerC
 			}
 			return ctx.Err()
-		case <-timer.C:
+		case <-timerC:
 		}
 	}
 	return err

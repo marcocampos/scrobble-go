@@ -88,6 +88,34 @@ func TestWithRetry_ContextCancelledDuringBackoff(t *testing.T) {
 	}
 }
 
+func TestWithRetry_TimerDrainOnContextCancelled(t *testing.T) {
+	// Exercise the timer-drain path by injecting a backoffTimerFn that:
+	//   - returns a buffered channel that is initially empty (so ctx.Done()
+	//     is the only ready case and is selected immediately)
+	//   - returns a stop function that enqueues a value and returns false,
+	//     simulating a timer that has already fired so the drain executes
+	orig := backoffTimerFn
+	defer func() { backoffTimerFn = orig }()
+
+	backoffTimerFn = func(time.Duration) (<-chan time.Time, func() bool) {
+		ch := make(chan time.Time, 1) // buffered so stopFunc send never blocks
+		return ch, func() bool {
+			ch <- time.Time{} // ensure <-timerC in the drain can proceed
+			return false      // Stop always reports "already fired"
+		}
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancelled before the select so ctx.Done() is chosen
+
+	err := withRetry(ctx, 2, func() error {
+		return &NetworkError{NetworkName: "test", UnderlyingError: errors.New("transient")}
+	})
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context.Canceled, got %v", err)
+	}
+}
+
 func TestWithRetry_ZeroMaxAttempts(t *testing.T) {
 	calls := 0
 	err := withRetry(context.Background(), 0, func() error {
