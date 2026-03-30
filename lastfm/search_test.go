@@ -154,8 +154,11 @@ const emptyTrackSearchXML = `<lfm status="ok">
 
 // servePages returns a TLS server that responds with pages[0] on the first
 // request, pages[1] on the second, and so on. The last entry is repeated for
-// any additional requests.
+// any additional requests. Panics if called with no pages.
 func servePages(pages ...string) *httptest.Server {
+	if len(pages) == 0 {
+		panic("servePages: at least one page response must be provided")
+	}
 	calls := 0
 	return httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/xml; charset=utf-8")
@@ -218,6 +221,70 @@ func TestTrackSearch_All_YieldsAllResults(t *testing.T) {
 	if len(titles) != 2 {
 		t.Errorf("got %d results, want 2", len(titles))
 	}
+}
+
+func TestAlbumSearch_All_StopsOnEarlyReturn(t *testing.T) {
+	srv := servePages(albumSearchXML, emptyAlbumSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	count := 0
+	for _, err := range c.SearchForAlbum("dance of death").All(context.Background()) {
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		count++
+		break // stop after first result
+	}
+	if count != 1 {
+		t.Errorf("expected early exit after 1 result, got %d", count)
+	}
+}
+
+func TestAlbumSearch_All_PropagatesError(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	for _, err := range c.SearchForAlbum("dance of death").All(context.Background()) {
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		return
+	}
+	t.Fatal("expected at least one iteration with an error")
+}
+
+func TestTrackSearch_All_StopsOnEarlyReturn(t *testing.T) {
+	srv := servePages(trackSearchXML, emptyTrackSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	count := 0
+	for _, err := range c.SearchForTrack("", "nomad").All(context.Background()) {
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		count++
+		break // stop after first result
+	}
+	if count != 1 {
+		t.Errorf("expected early exit after 1 result, got %d", count)
+	}
+}
+
+func TestTrackSearch_All_PropagatesError(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	for _, err := range c.SearchForTrack("", "nomad").All(context.Background()) {
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		return
+	}
+	t.Fatal("expected at least one iteration with an error")
 }
 
 func TestArtistSearch_All_StopsOnEarlyReturn(t *testing.T) {

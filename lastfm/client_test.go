@@ -23,8 +23,8 @@ func TestWithPasswordHash(t *testing.T) {
 func TestWithCache(t *testing.T) {
 	cache := NewMemoryCache()
 	c := NewLastFMClient("k", "s", WithCache(cache))
-	if c.cache == nil {
-		t.Error("cache should be set")
+	if c.cache != cache {
+		t.Error("cache should be the exact instance passed to WithCache")
 	}
 }
 
@@ -44,6 +44,9 @@ func TestWithHTTPClient(t *testing.T) {
 }
 
 func TestDelayCall_EnforcesGap(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping timing test in short mode")
+	}
 	c := NewLastFMClient("k", "s", WithRateLimit())
 	c.delayCall() // prime lastCall
 	start := time.Now()
@@ -55,8 +58,8 @@ func TestDelayCall_EnforcesGap(t *testing.T) {
 
 func TestDelayCall_NoRateLimit(t *testing.T) {
 	c := NewLastFMClient("k", "s") // no WithRateLimit
-	// delayCall is a no-op when rateLimit is false, so this just
-	// verifies the client struct remains consistent.
-	c.delayCall()
+	// delayCall always enforces the gap when called directly; callers
+	// in the request path guard it with c.rateLimit. Call once to
+	// verify it does not panic on a zero-value lastCall.
 	c.delayCall()
 }
