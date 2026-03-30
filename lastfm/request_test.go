@@ -155,6 +155,25 @@ func TestAPIRequest_Execute_NetworkError(t *testing.T) {
 	}
 }
 
+func TestAPIRequest_Execute_WithRetryOption(t *testing.T) {
+	// Verify that a client built with WithRetry uses maxAttempts > 1 when
+	// executing a request (exercises the r.client.maxAttempts > 0 branch).
+	srv := serveXML(sampleArtistXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	c.maxAttempts = 2 // equivalent to WithRetry(2)
+
+	r := newAPIRequest(c, "artist.getInfo", map[string]string{"artist": "Iron Maiden"})
+	doc, err := r.execute(context.Background(), false)
+	if err != nil {
+		t.Fatalf("execute: unexpected error: %v", err)
+	}
+	if name := extract(doc, "name"); name != "Iron Maiden" {
+		t.Errorf("extract(name) = %q, want %q", name, "Iron Maiden")
+	}
+}
+
 func TestConvertParam(t *testing.T) {
 	tests := []struct {
 		input any
