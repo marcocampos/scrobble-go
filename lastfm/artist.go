@@ -28,21 +28,28 @@ func (a *Artist) baseParams() map[string]string {
 
 // ArtistInfo holds the metadata returned by artist.getInfo.
 type ArtistInfo struct {
-	Name         string
-	MBID         string
-	URL          string
-	Listeners    int
-	Playcount    int
-	Images       map[int]string
-	TopTags      []TopItem[*Tag]
-	BioSummary   string
-	BioContent   string
-	BioPublished string
+	Name          string
+	MBID          string
+	URL           string
+	Listeners     int
+	Playcount     int
+	UserPlaycount int
+	Images        map[int]string
+	TopTags       []TopItem[*Tag]
+	BioSummary    string
+	BioContent    string
+	BioPublished  string
 }
 
 // GetInfo returns detailed information about the artist.
+// If the client has an authenticated username, the response also includes
+// that user's personal play count (UserPlaycount).
 func (a *Artist) GetInfo(ctx context.Context) (*ArtistInfo, error) {
-	doc, err := newAPIRequest(a.client, "artist.getInfo", a.baseParams()).execute(ctx, true)
+	params := a.baseParams()
+	if a.client.net.Username != "" {
+		params["username"] = a.client.net.Username
+	}
+	doc, err := newAPIRequest(a.client, "artist.getInfo", params).execute(ctx, true)
 	if err != nil {
 		return nil, fmt.Errorf("Artist.GetInfo: %w", err)
 	}
@@ -56,12 +63,13 @@ func (a *Artist) GetInfo(ctx context.Context) (*ArtistInfo, error) {
 	}
 
 	info := &ArtistInfo{
-		Name:      extract(node, "name"),
-		MBID:      extract(node, "mbid"),
-		URL:       extract(node, "url"),
-		Listeners: parseInt(extract(node, "listeners")),
-		Playcount: parseInt(extract(node, "playcount")),
-		Images:    extractImages(node),
+		Name:          extract(node, "name"),
+		MBID:          extract(node, "mbid"),
+		URL:           extract(node, "url"),
+		Listeners:     parseInt(extract(node, "listeners")),
+		Playcount:     parseInt(extract(node, "playcount")),
+		UserPlaycount: parseInt(extract(node, "userplaycount")),
+		Images:        extractImages(node),
 	}
 
 	if tagsNode := node.find("tags"); tagsNode != nil {
@@ -86,42 +94,38 @@ func (a *Artist) GetInfo(ctx context.Context) (*ArtistInfo, error) {
 
 // GetMBID returns the artist's MusicBrainz ID.
 func (a *Artist) GetMBID(ctx context.Context) (string, error) {
-	doc, err := newAPIRequest(a.client, "artist.getInfo", a.baseParams()).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return "", fmt.Errorf("Artist.GetMBID: %w", err)
 	}
-	return extract(doc, "mbid"), nil
+	return info.MBID, nil
 }
 
 // GetListenerCount returns the number of Last.fm listeners.
 func (a *Artist) GetListenerCount(ctx context.Context) (float64, error) {
-	doc, err := newAPIRequest(a.client, "artist.getInfo", a.baseParams()).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Artist.GetListenerCount: %w", err)
 	}
-	return parseNumber(extract(doc, "listeners")), nil
+	return float64(info.Listeners), nil
 }
 
 // GetPlaycount returns the total play count on Last.fm.
 func (a *Artist) GetPlaycount(ctx context.Context) (float64, error) {
-	doc, err := newAPIRequest(a.client, "artist.getInfo", a.baseParams()).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Artist.GetPlaycount: %w", err)
 	}
-	return parseNumber(extract(doc, "playcount")), nil
+	return float64(info.Playcount), nil
 }
 
 // GetUserPlaycount returns the play count for the authenticated user.
 func (a *Artist) GetUserPlaycount(ctx context.Context) (float64, error) {
-	params := a.baseParams()
-	if a.client.net.Username != "" {
-		params["username"] = a.client.net.Username
-	}
-	doc, err := newAPIRequest(a.client, "artist.getInfo", params).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Artist.GetUserPlaycount: %w", err)
 	}
-	return parseNumber(extract(doc, "userplaycount")), nil
+	return float64(info.UserPlaycount), nil
 }
 
 // GetSimilar returns artists similar to this one.

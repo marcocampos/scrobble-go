@@ -48,6 +48,7 @@ type TrackInfo struct {
 	URL           string
 	Listeners     int
 	Playcount     int
+	UserPlaycount int
 	Duration      int // seconds
 	Images        map[int]string
 	TopTags       []TopItem[*Tag]
@@ -76,13 +77,14 @@ func (t *Track) GetInfo(ctx context.Context) (*TrackInfo, error) {
 	}
 
 	info := &TrackInfo{
-		Title:     extract(node, "name"),
-		MBID:      extract(node, "mbid"),
-		URL:       extract(node, "url"),
-		Listeners: parseInt(extract(node, "listeners")),
-		Playcount: parseInt(extract(node, "playcount")),
-		Duration:  parseInt(extract(node, "duration")) / 1000, // API returns ms
-		Images:    extractImages(node),
+		Title:         extract(node, "name"),
+		MBID:          extract(node, "mbid"),
+		URL:           extract(node, "url"),
+		Listeners:     parseInt(extract(node, "listeners")),
+		Playcount:     parseInt(extract(node, "playcount")),
+		UserPlaycount: parseInt(extract(node, "userplaycount")),
+		Duration:      parseInt(extract(node, "duration")) / 1000, // API returns ms
+		Images:        extractImages(node),
 	}
 
 	if artistNode := node.find("artist"); artistNode != nil {
@@ -114,52 +116,47 @@ func (t *Track) GetInfo(ctx context.Context) (*TrackInfo, error) {
 
 // GetMBID returns the track's MusicBrainz ID.
 func (t *Track) GetMBID(ctx context.Context) (string, error) {
-	doc, err := newAPIRequest(t.client, "track.getInfo", t.baseParams()).execute(ctx, true)
+	info, err := t.GetInfo(ctx)
 	if err != nil {
 		return "", fmt.Errorf("Track.GetMBID: %w", err)
 	}
-	return extract(doc, "mbid"), nil
+	return info.MBID, nil
 }
 
 // GetDuration returns the track duration in seconds.
 func (t *Track) GetDuration(ctx context.Context) (int, error) {
-	doc, err := newAPIRequest(t.client, "track.getInfo", t.baseParams()).execute(ctx, true)
+	info, err := t.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Track.GetDuration: %w", err)
 	}
-	// The API returns duration in milliseconds.
-	return parseInt(extract(doc, "duration")) / 1000, nil
+	return info.Duration, nil
 }
 
 // GetListenerCount returns the number of Last.fm listeners.
 func (t *Track) GetListenerCount(ctx context.Context) (float64, error) {
-	doc, err := newAPIRequest(t.client, "track.getInfo", t.baseParams()).execute(ctx, true)
+	info, err := t.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Track.GetListenerCount: %w", err)
 	}
-	return parseNumber(extract(doc, "listeners")), nil
+	return float64(info.Listeners), nil
 }
 
 // GetPlaycount returns the total play count on Last.fm.
 func (t *Track) GetPlaycount(ctx context.Context) (float64, error) {
-	doc, err := newAPIRequest(t.client, "track.getInfo", t.baseParams()).execute(ctx, true)
+	info, err := t.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Track.GetPlaycount: %w", err)
 	}
-	return parseNumber(extract(doc, "playcount")), nil
+	return float64(info.Playcount), nil
 }
 
 // GetUserPlaycount returns the play count for the authenticated user.
 func (t *Track) GetUserPlaycount(ctx context.Context) (float64, error) {
-	params := t.baseParams()
-	if t.username != "" {
-		params["username"] = t.username
-	}
-	doc, err := newAPIRequest(t.client, "track.getInfo", params).execute(ctx, true)
+	info, err := t.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Track.GetUserPlaycount: %w", err)
 	}
-	return parseNumber(extract(doc, "userplaycount")), nil
+	return float64(info.UserPlaycount), nil
 }
 
 // GetSimilar returns tracks similar to this one.
@@ -243,15 +240,20 @@ func (t *Track) GetWikiPublishedDate(ctx context.Context) (string, error) {
 }
 
 func (t *Track) getWiki(ctx context.Context, section string) (string, error) {
-	doc, err := newAPIRequest(t.client, "track.getInfo", t.baseParams()).execute(ctx, true)
+	info, err := t.GetInfo(ctx)
 	if err != nil {
 		return "", fmt.Errorf("Track.GetWiki: %w", err)
 	}
-	wikiNode := doc.find("wiki")
-	if wikiNode == nil {
+	switch section {
+	case "summary":
+		return info.WikiSummary, nil
+	case "content":
+		return info.WikiContent, nil
+	case "published":
+		return info.WikiPublished, nil
+	default:
 		return "", nil
 	}
-	return extract(wikiNode, section), nil
 }
 
 // GetURL returns the Last.fm page URL for this track in the given domain/language.
