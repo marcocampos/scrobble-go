@@ -31,9 +31,9 @@ type ArtistInfo struct {
 	Name          string
 	MBID          string
 	URL           string
-	Listeners     int
-	Playcount     int
-	UserPlaycount int
+	Listeners     int64
+	Playcount     int64
+	UserPlaycount int64
 	Images        map[int]string
 	TopTags       []TopItem[*Tag]
 	BioSummary    string
@@ -66,9 +66,9 @@ func (a *Artist) GetInfo(ctx context.Context) (*ArtistInfo, error) {
 		Name:          extract(node, "name"),
 		MBID:          extract(node, "mbid"),
 		URL:           extract(node, "url"),
-		Listeners:     parseInt(extract(node, "listeners")),
-		Playcount:     parseInt(extract(node, "playcount")),
-		UserPlaycount: parseInt(extract(node, "userplaycount")),
+		Listeners:     parseInt64(extract(node, "listeners")),
+		Playcount:     parseInt64(extract(node, "playcount")),
+		UserPlaycount: parseInt64(extract(node, "userplaycount")),
 		Images:        extractImages(node),
 	}
 

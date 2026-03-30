@@ -46,9 +46,9 @@ type TrackInfo struct {
 	Album         string
 	MBID          string
 	URL           string
-	Listeners     int
-	Playcount     int
-	UserPlaycount int
+	Listeners     int64
+	Playcount     int64
+	UserPlaycount int64
 	Duration      int // seconds
 	Images        map[int]string
 	TopTags       []TopItem[*Tag]
@@ -80,9 +80,9 @@ func (t *Track) GetInfo(ctx context.Context) (*TrackInfo, error) {
 		Title:         extract(node, "name"),
 		MBID:          extract(node, "mbid"),
 		URL:           extract(node, "url"),
-		Listeners:     parseInt(extract(node, "listeners")),
-		Playcount:     parseInt(extract(node, "playcount")),
-		UserPlaycount: parseInt(extract(node, "userplaycount")),
+		Listeners:     parseInt64(extract(node, "listeners")),
+		Playcount:     parseInt64(extract(node, "playcount")),
+		UserPlaycount: parseInt64(extract(node, "userplaycount")),
 		Duration:      parseInt(extract(node, "duration")) / 1000, // API returns ms
 		Images:        extractImages(node),
 	}
