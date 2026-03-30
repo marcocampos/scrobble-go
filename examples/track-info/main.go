@@ -30,13 +30,13 @@ func main() {
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
 
 	t := client.GetTrack(*artist, *track)
 
 	// ── Core info ─────────────────────────────────────────────────────────────
 	info, err := t.GetInfo(ctx)
 	if err != nil {
+		cancel()
 		log.Fatalf("GetInfo: %v", err)
 	}
 
@@ -81,6 +81,7 @@ func main() {
 				s.Match*100, s.Item.Artist.Name, s.Item.Title)
 		}
 	}
+	cancel()
 }
 
 func mustEnv(key string) string {

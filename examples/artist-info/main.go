@@ -29,13 +29,13 @@ func main() {
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 
 	a := client.GetArtist(*artistName)
 
 	// ── Core info ─────────────────────────────────────────────────────────────
 	info, err := a.GetInfo(ctx)
 	if err != nil {
+		cancel()
 		log.Fatalf("GetInfo: %v", err)
 	}
 
@@ -93,6 +93,7 @@ func main() {
 			fmt.Printf("  %-40s %s plays\n", t.Item.Title, formatInt(int64(t.Weight)))
 		}
 	}
+	cancel()
 }
 
 func mustEnv(key string) string {

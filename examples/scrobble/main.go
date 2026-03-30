@@ -37,10 +37,10 @@ func main() {
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 
 	fmt.Printf("Authenticating as %q...\n", username)
 	if err := client.AuthenticateWithPassword(ctx, username, passwordHash); err != nil {
+		cancel()
 		log.Fatalf("authentication failed: %v", err)
 	}
 	fmt.Println("Authenticated.")
@@ -54,6 +54,7 @@ func main() {
 		Duration: 248,
 	})
 	if err != nil {
+		cancel()
 		log.Fatalf("UpdateNowPlaying: %v", err)
 	}
 	fmt.Println("Now-playing sent.")
@@ -69,6 +70,7 @@ func main() {
 		Timestamp: ts,
 	})
 	if err != nil {
+		cancel()
 		log.Fatalf("Scrobble: %v", err)
 	}
 	fmt.Println("Scrobble accepted.")
@@ -77,12 +79,14 @@ func main() {
 	fmt.Println("Fetching recent tracks...")
 	tracks, err := client.GetUser(username).GetRecentTracks(ctx, 3, 0)
 	if err != nil {
+		cancel()
 		log.Fatalf("GetRecentTracks: %v", err)
 	}
 	fmt.Printf("Last %d scrobbles:\n", len(tracks))
 	for _, t := range tracks {
 		fmt.Printf("  %s – %s\n", t.Track.Artist.Name, t.Track.Title)
 	}
+	cancel()
 }
 
 func mustEnv(key string) string {

@@ -80,11 +80,11 @@ func (r *apiRequest) signature() string {
 	}
 	b.WriteString(r.client.net.APISecret)
 
-	h := md5.Sum([]byte(b.String())) //nolint:gosec
+	h := md5.Sum([]byte(b.String())) //nolint:gosec // MD5 is required by the Last.fm API signature scheme
 	return fmt.Sprintf("%x", h)
 }
 
-// cacheKey returns a stable SHA-1 hex key derived from the request params,
+// cacheKey returns a stable MD5 hex key derived from the request params,
 // excluding auth-only fields (api_sig, api_key, sk).
 func (r *apiRequest) cacheKey() string {
 	keys := make([]string, 0, len(r.params))
@@ -102,7 +102,7 @@ func (r *apiRequest) cacheKey() string {
 	}
 
 	// Use MD5 for the cache key (not security-sensitive).
-	h := md5.Sum([]byte(b.String())) //nolint:gosec
+	h := md5.Sum([]byte(b.String())) //nolint:gosec // MD5 is used as a cache key, not for security
 	return fmt.Sprintf("%x", h)
 }
 
@@ -218,7 +218,14 @@ func checkAPIErrors(body, networkName string) error {
 		}
 	}
 
-	slog.Debug("API response", "xml", body)
+	if slog.Default().Enabled(context.Background(), slog.LevelDebug) {
+		const maxDebugLen = 500
+		excerpt := body
+		if len(excerpt) > maxDebugLen {
+			excerpt = excerpt[:maxDebugLen] + "...(truncated)"
+		}
+		slog.Debug("API response", "xml", excerpt)
+	}
 
 	if doc.attr("status") == "ok" {
 		return nil

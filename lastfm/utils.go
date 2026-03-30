@@ -1,7 +1,7 @@
 package lastfm
 
 import (
-	"crypto/md5" //nolint:gosec // MD5 is required by the Last.fm API signature scheme
+	"crypto/md5" //nolint:gosec // MD5 is required by the Last.fm API for password hashing and request signing
 	"fmt"
 	"strconv"
 )
@@ -9,7 +9,7 @@ import (
 // MD5 returns the hex-encoded MD5 digest of s.
 // This is required by the Last.fm API for password hashing and request signing.
 func MD5(s string) string {
-	h := md5.Sum([]byte(s)) //nolint:gosec
+	h := md5.Sum([]byte(s)) //nolint:gosec // MD5 is required by the Last.fm API for password hashing
 	return fmt.Sprintf("%x", h)
 }
 
