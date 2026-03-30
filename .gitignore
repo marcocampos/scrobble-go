@@ -1,1 +1,38 @@
+# Environment
 .env
+
+# Test & coverage
+coverage.out
+coverage.html
+*.test
+
+# Build output
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Binaries
+/bin/
+/dist/
+
+# Go workspace
+go.work
+go.work.sum
+
+# Dependency cache
+vendor/
+
+# Debug
+__debug_bin*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
