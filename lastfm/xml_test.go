@@ -164,8 +164,8 @@ func TestCheckAPIErrors_WSError(t *testing.T) {
 	default:
 		t.Fatalf("expected *WSError, got %T: %v", err, err)
 	}
-	if wsErr.Status != "10" {
-		t.Errorf("WSError.Status = %q, want %q", wsErr.Status, "10")
+	if wsErr.Status != StatusInvalidAPIKey {
+		t.Errorf("WSError.Status = %d, want %d", wsErr.Status, StatusInvalidAPIKey)
 	}
 	if wsErr.Details == "" {
 		t.Error("WSError.Details should not be empty")
@@ -185,6 +185,28 @@ func TestCheckAPIErrors_MalformedXML(t *testing.T) {
 func TestCheckAPIErrors_StatusNotOkNoErrorElement(t *testing.T) {
 	// status="failed" but no <error> child element.
 	xml := `<lfm status="failed"></lfm>`
+	_, err := checkAPIErrors(xml, "Last.fm")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if _, ok := err.(*MalformedResponseError); !ok {
+		t.Errorf("expected *MalformedResponseError, got %T", err)
+	}
+}
+
+func TestCheckAPIErrors_MissingErrorCode(t *testing.T) {
+	xml := `<lfm status="failed"><error>Something went wrong</error></lfm>`
+	_, err := checkAPIErrors(xml, "Last.fm")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if _, ok := err.(*MalformedResponseError); !ok {
+		t.Errorf("expected *MalformedResponseError, got %T", err)
+	}
+}
+
+func TestCheckAPIErrors_InvalidErrorCode(t *testing.T) {
+	xml := `<lfm status="failed"><error code="abc">Bad code</error></lfm>`
 	_, err := checkAPIErrors(xml, "Last.fm")
 	if err == nil {
 		t.Fatal("expected error, got nil")

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -58,7 +59,7 @@ func TestWithRetry_ExhaustsAttempts(t *testing.T) {
 
 func TestWithRetry_NonRetriableErrorStopsImmediately(t *testing.T) {
 	calls := 0
-	wsErr := &WSError{Status: "6", Details: "invalid params"}
+	wsErr := &WSError{Status: StatusInvalidParams, Details: "invalid params"}
 	err := withRetry(context.Background(), 3, func() error {
 		calls++
 		return wsErr
@@ -141,12 +142,12 @@ func TestIsRetriable(t *testing.T) {
 		{"nil", nil, false},
 		{"NetworkError", &NetworkError{NetworkName: "x", UnderlyingError: errors.New("x")}, true},
 		{"wrapped NetworkError", fmt.Errorf("outer: %w", &NetworkError{NetworkName: "x", UnderlyingError: errors.New("x")}), true},
-		{"WSError 502", &WSError{Status: "502"}, true},
-		{"WSError 503", &WSError{Status: "503"}, true},
-		{"WSError 504", &WSError{Status: "504"}, true},
-		{"wrapped WSError 503", fmt.Errorf("outer: %w", &WSError{Status: "503"}), true},
-		{"WSError 6 (invalid params)", &WSError{Status: "6"}, false},
-		{"wrapped WSError non-retriable", fmt.Errorf("outer: %w", &WSError{Status: "6"}), false},
+		{"WSError 502", &WSError{Status: http.StatusBadGateway}, true},
+		{"WSError 503", &WSError{Status: http.StatusServiceUnavailable}, true},
+		{"WSError 504", &WSError{Status: http.StatusGatewayTimeout}, true},
+		{"wrapped WSError 503", fmt.Errorf("outer: %w", &WSError{Status: http.StatusServiceUnavailable}), true},
+		{"WSError 6 (invalid params)", &WSError{Status: StatusInvalidParams}, false},
+		{"wrapped WSError non-retriable", fmt.Errorf("outer: %w", &WSError{Status: StatusInvalidParams}), false},
 		{"generic error", errors.New("something"), false},
 	}
 	for _, tt := range tests {

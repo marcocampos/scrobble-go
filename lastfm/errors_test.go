@@ -7,7 +7,7 @@ import (
 )
 
 func TestWSError_Error(t *testing.T) {
-	e := &WSError{Status: "10", Details: "Invalid API key"}
+	e := &WSError{Status: StatusInvalidAPIKey, Details: "Invalid API key"}
 	msg := e.Error()
 	if !strings.Contains(msg, "10") {
 		t.Errorf("Error() = %q, want it to contain status code", msg)
