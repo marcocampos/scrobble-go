@@ -28,8 +28,3 @@ linters:
         - diagnostic
         - style
 
-issues:
-  exclude-rules:
-    # MD5 is required by the Last.fm API signature scheme — not a security issue.
-    - linters: [gosec]
-      text: "G401|G501"
