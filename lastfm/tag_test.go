@@ -86,6 +86,28 @@ func TestTag_GetTopTracks(t *testing.T) {
 	}
 }
 
+func TestTag_ErrorResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, tag *Tag) error
+	}{
+		{"GetInfo", func(ctx context.Context, tag *Tag) error { _, err := tag.GetInfo(ctx); return err }},
+		{"GetTopArtists", func(ctx context.Context, tag *Tag) error { _, err := tag.GetTopArtists(ctx, 5); return err }},
+		{"GetTopTracks", func(ctx context.Context, tag *Tag) error { _, err := tag.GetTopTracks(ctx, 5); return err }},
+		{"GetTopAlbums", func(ctx context.Context, tag *Tag) error { _, err := tag.GetTopAlbums(ctx, 5); return err }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
+			c := newTestClient(t, srv)
+			if err := tt.call(context.Background(), c.GetTag("heavy metal")); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
+
 func TestTag_GetTopAlbums(t *testing.T) {
 	srv := serveXML(topAlbumsXML)
 	defer srv.Close()

@@ -167,6 +167,38 @@ func TestClient_GetGeoTopTracks(t *testing.T) {
 	}
 }
 
+func TestClient_ErrorResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, c *Client) error
+	}{
+		{"GetTrackByMBID", func(ctx context.Context, c *Client) error { _, err := c.GetTrackByMBID(ctx, "abc-123"); return err }},
+		{"GetArtistByMBID", func(ctx context.Context, c *Client) error { _, err := c.GetArtistByMBID(ctx, "abc-123"); return err }},
+		{"GetAlbumByMBID", func(ctx context.Context, c *Client) error { _, err := c.GetAlbumByMBID(ctx, "abc-123"); return err }},
+		{"GetTopArtists", func(ctx context.Context, c *Client) error { _, err := c.GetTopArtists(ctx, 5); return err }},
+		{"GetTopTracks", func(ctx context.Context, c *Client) error { _, err := c.GetTopTracks(ctx, 5); return err }},
+		{"GetTopTags", func(ctx context.Context, c *Client) error { _, err := c.GetTopTags(ctx, 5); return err }},
+		{"GetGeoTopArtists", func(ctx context.Context, c *Client) error {
+			_, err := c.GetGeoTopArtists(ctx, "Germany", 5)
+			return err
+		}},
+		{"GetGeoTopTracks", func(ctx context.Context, c *Client) error {
+			_, err := c.GetGeoTopTracks(ctx, "Germany", "", 5)
+			return err
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
+			c := newTestClient(t, srv)
+			if err := tt.call(context.Background(), c); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
+
 func TestClient_GetGeoTopTracks_WithLocation(t *testing.T) {
 	srv := serveXML(topTracksXML)
 	defer srv.Close()

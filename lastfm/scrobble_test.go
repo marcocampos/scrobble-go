@@ -171,6 +171,92 @@ func TestUpdateNowPlaying_OptionalFieldsOmitted(t *testing.T) {
 	}
 }
 
+func TestScrobble_AllOptionalFields(t *testing.T) {
+	srv, captured := captureServer(scrobbleOKXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	chosen := true
+	err := c.Scrobble(context.Background(), ScrobbleParams{
+		Artist:       "Iron Maiden",
+		Title:        "The Nomad",
+		Timestamp:    1609459200,
+		Album:        "Dance of Death",
+		AlbumArtist:  "Iron Maiden",
+		TrackNumber:  6,
+		Duration:     613,
+		StreamID:     "stream1",
+		Context:      "ctx",
+		MBID:         "abc-123",
+		ChosenByUser: &chosen,
+	})
+	if err != nil {
+		t.Fatalf("Scrobble: %v", err)
+	}
+
+	checks := map[string]string{
+		"albumArtist[0]":  "Iron Maiden",
+		"trackNumber[0]":  "6",
+		"duration[0]":     "613",
+		"streamID[0]":     "stream1",
+		"context[0]":      "ctx",
+		"mbid[0]":         "abc-123",
+		"chosenByUser[0]": "1",
+	}
+	for key, want := range checks {
+		if got := captured.Get(key); got != want {
+			t.Errorf("%s = %q, want %q", key, got, want)
+		}
+	}
+}
+
+func TestUpdateNowPlaying_AllOptionalFields(t *testing.T) {
+	srv, captured := captureServer(nowPlayingOKXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	err := c.UpdateNowPlaying(context.Background(), NowPlayingParams{
+		Artist:      "Iron Maiden",
+		Title:       "The Nomad",
+		AlbumArtist: "Iron Maiden",
+		TrackNumber: 6,
+		MBID:        "abc-123",
+		Context:     "ctx",
+	})
+	if err != nil {
+		t.Fatalf("UpdateNowPlaying: %v", err)
+	}
+
+	checks := map[string]string{
+		"albumArtist": "Iron Maiden",
+		"trackNumber": "6",
+		"mbid":        "abc-123",
+		"context":     "ctx",
+	}
+	for key, want := range checks {
+		if got := captured.Get(key); got != want {
+			t.Errorf("%s = %q, want %q", key, got, want)
+		}
+	}
+}
+
+func TestUpdateNowPlaying_WSError(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	err := c.UpdateNowPlaying(context.Background(), NowPlayingParams{
+		Artist: "Iron Maiden",
+		Title:  "The Nomad",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "UpdateNowPlaying") {
+		t.Errorf("error should mention UpdateNowPlaying, got: %v", err)
+	}
+}
+
 func TestScrobble_WSError(t *testing.T) {
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/xml; charset=utf-8")

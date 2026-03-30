@@ -52,6 +52,26 @@ func TestCountry_GetTopTracks(t *testing.T) {
 	}
 }
 
+func TestCountry_ErrorResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, co *Country) error
+	}{
+		{"GetTopArtists", func(ctx context.Context, co *Country) error { _, err := co.GetTopArtists(ctx, 5); return err }},
+		{"GetTopTracks", func(ctx context.Context, co *Country) error { _, err := co.GetTopTracks(ctx, 5); return err }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
+			c := newTestClient(t, srv)
+			if err := tt.call(context.Background(), c.GetCountry("Germany")); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
+
 func TestCountry_GetURL(t *testing.T) {
 	c := NewLastFMClient("k", "s")
 	url := c.GetCountry("Germany").GetURL(DomainEnglish)

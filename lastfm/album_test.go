@@ -30,6 +30,17 @@ func TestAlbum_String(t *testing.T) {
 	}
 }
 
+func TestAlbum_GetInfo_WithUsername(t *testing.T) {
+	srv := serveXML(albumInfoXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv, WithUsername("testuser"))
+	_, err := c.GetAlbum("Iron Maiden", "Dance of Death").GetInfo(context.Background())
+	if err != nil {
+		t.Fatalf("GetInfo (with username): %v", err)
+	}
+}
+
 func TestAlbum_GetMBID(t *testing.T) {
 	srv := serveXML(albumInfoXML)
 	defer srv.Close()
@@ -222,6 +233,46 @@ func TestAlbum_GetURL(t *testing.T) {
 	url := c.GetAlbum("Iron Maiden", "Piece of Mind").GetURL(DomainEnglish)
 	if url == "" {
 		t.Error("GetURL should return a non-empty string")
+	}
+}
+
+func TestAlbum_getWiki_DefaultSection(t *testing.T) {
+	// The unexported getWiki has a default switch case that returns "".
+	srv := serveXML(albumInfoXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	result, err := c.GetAlbum("Iron Maiden", "Dance of Death").getWiki(context.Background(), "unknown")
+	if err != nil {
+		t.Fatalf("getWiki: %v", err)
+	}
+	if result != "" {
+		t.Errorf("getWiki with unknown section = %q, want empty", result)
+	}
+}
+
+func TestAlbum_ErrorPaths(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, a *Album) error
+	}{
+		{"GetMBID", func(ctx context.Context, a *Album) error { _, err := a.GetMBID(ctx); return err }},
+		{"GetListenerCount", func(ctx context.Context, a *Album) error { _, err := a.GetListenerCount(ctx); return err }},
+		{"GetPlaycount", func(ctx context.Context, a *Album) error { _, err := a.GetPlaycount(ctx); return err }},
+		{"GetUserPlaycount", func(ctx context.Context, a *Album) error { _, err := a.GetUserPlaycount(ctx); return err }},
+		{"GetCoverImage", func(ctx context.Context, a *Album) error { _, err := a.GetCoverImage(ctx, SizeLarge); return err }},
+		{"GetTracks", func(ctx context.Context, a *Album) error { _, err := a.GetTracks(ctx); return err }},
+		{"GetWikiSummary", func(ctx context.Context, a *Album) error { _, err := a.GetWikiSummary(ctx); return err }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
+			c := newTestClient(t, srv)
+			if err := tt.call(context.Background(), c.GetAlbum("Iron Maiden", "Dance of Death")); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
 	}
 }
 

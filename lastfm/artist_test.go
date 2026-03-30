@@ -169,6 +169,49 @@ func TestArtist_GetURL(t *testing.T) {
 	}
 }
 
+func TestArtist_ErrorResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, a *Artist) error
+	}{
+		{"GetMBID", func(ctx context.Context, a *Artist) error { _, err := a.GetMBID(ctx); return err }},
+		{"GetListenerCount", func(ctx context.Context, a *Artist) error { _, err := a.GetListenerCount(ctx); return err }},
+		{"GetPlaycount", func(ctx context.Context, a *Artist) error { _, err := a.GetPlaycount(ctx); return err }},
+		{"GetUserPlaycount", func(ctx context.Context, a *Artist) error { _, err := a.GetUserPlaycount(ctx); return err }},
+		{"GetSimilar", func(ctx context.Context, a *Artist) error { _, err := a.GetSimilar(ctx, 5); return err }},
+		{"AddTags", func(ctx context.Context, a *Artist) error { return a.AddTags(ctx, []string{"metal"}) }},
+		{"RemoveTag", func(ctx context.Context, a *Artist) error { return a.RemoveTag(ctx, "metal") }},
+		{"GetTags", func(ctx context.Context, a *Artist) error { _, err := a.GetTags(ctx); return err }},
+		{"GetTopTags", func(ctx context.Context, a *Artist) error { _, err := a.GetTopTags(ctx, 5); return err }},
+		{"GetTopAlbums", func(ctx context.Context, a *Artist) error { _, err := a.GetTopAlbums(ctx, 0); return err }},
+		{"GetTopTracks", func(ctx context.Context, a *Artist) error { _, err := a.GetTopTracks(ctx, 0); return err }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
+			c := newTestClient(t, srv)
+			if err := tt.call(context.Background(), c.GetArtist("Iron Maiden")); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
+
+func TestArtist_GetTopAlbums_WithLimit(t *testing.T) {
+	srv := serveXML(artistTopAlbumsXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	albums, err := c.GetArtist("Iron Maiden").GetTopAlbums(context.Background(), 1)
+	if err != nil {
+		t.Fatalf("GetTopAlbums: %v", err)
+	}
+	if len(albums) != 2 {
+		t.Fatalf("len(albums) = %d, want 2", len(albums))
+	}
+}
+
 func TestArtist_GetInfo_MissingNode(t *testing.T) {
 	srv := serveXML(`<lfm status="ok"><results></results></lfm>`)
 	defer srv.Close()

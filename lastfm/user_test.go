@@ -219,6 +219,45 @@ func TestUser_GetNowPlaying_None(t *testing.T) {
 	}
 }
 
+func TestUser_ErrorResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, u *User) error
+	}{
+		{"GetInfo", func(ctx context.Context, u *User) error { _, err := u.GetInfo(ctx); return err }},
+		{"GetRecentTracks", func(ctx context.Context, u *User) error { _, err := u.GetRecentTracks(ctx, 10, 0); return err }},
+		{"GetNowPlaying", func(ctx context.Context, u *User) error { _, err := u.GetNowPlaying(ctx); return err }},
+		{"GetLovedTracks", func(ctx context.Context, u *User) error { _, err := u.GetLovedTracks(ctx, 10, 1); return err }},
+		{"GetTopArtists", func(ctx context.Context, u *User) error { _, err := u.GetTopArtists(ctx, PeriodOverall, 5); return err }},
+		{"GetTopAlbums", func(ctx context.Context, u *User) error { _, err := u.GetTopAlbums(ctx, Period7Days, 5); return err }},
+		{"GetTopTracks", func(ctx context.Context, u *User) error { _, err := u.GetTopTracks(ctx, Period1Month, 5); return err }},
+		{"GetPlaycount", func(ctx context.Context, u *User) error { _, err := u.GetPlaycount(ctx); return err }},
+		{"GetWeeklyChartDates", func(ctx context.Context, u *User) error { _, err := u.GetWeeklyChartDates(ctx); return err }},
+		{"GetWeeklyArtistCharts", func(ctx context.Context, u *User) error {
+			_, err := u.GetWeeklyArtistCharts(ctx, "from", "to")
+			return err
+		}},
+		{"GetWeeklyTrackCharts", func(ctx context.Context, u *User) error {
+			_, err := u.GetWeeklyTrackCharts(ctx, "from", "to")
+			return err
+		}},
+		{"GetWeeklyAlbumCharts", func(ctx context.Context, u *User) error {
+			_, err := u.GetWeeklyAlbumCharts(ctx, "from", "to")
+			return err
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
+			c := newTestClient(t, srv)
+			if err := tt.call(context.Background(), c.GetUser("testuser")); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
+
 func TestUser_GetInfo_MissingNode(t *testing.T) {
 	srv := serveXML(`<lfm status="ok"><results></results></lfm>`)
 	defer srv.Close()

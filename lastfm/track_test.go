@@ -30,6 +30,17 @@ func TestTrack_String(t *testing.T) {
 	}
 }
 
+func TestTrack_GetInfo_WithUsername(t *testing.T) {
+	srv := serveXML(trackInfoXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv, WithUsername("testuser"))
+	_, err := c.GetTrack("Iron Maiden", "The Nomad").GetInfo(context.Background())
+	if err != nil {
+		t.Fatalf("GetInfo (with username): %v", err)
+	}
+}
+
 func TestTrack_GetMBID(t *testing.T) {
 	srv := serveXML(trackInfoXML)
 	defer srv.Close()
@@ -229,6 +240,47 @@ func TestTrack_GetURL(t *testing.T) {
 	url := c.GetTrack("Iron Maiden", "The Trooper").GetURL(DomainEnglish)
 	if url == "" {
 		t.Error("GetURL should return a non-empty string")
+	}
+}
+
+func TestTrack_getWiki_DefaultSection(t *testing.T) {
+	srv := serveXML(trackInfoXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	result, err := c.GetTrack("Iron Maiden", "The Nomad").getWiki(context.Background(), "unknown")
+	if err != nil {
+		t.Fatalf("getWiki: %v", err)
+	}
+	if result != "" {
+		t.Errorf("getWiki with unknown section = %q, want empty", result)
+	}
+}
+
+func TestTrack_ErrorResponses(t *testing.T) {
+	tests := []struct {
+		name string
+		call func(ctx context.Context, tr *Track) error
+	}{
+		{"GetMBID", func(ctx context.Context, tr *Track) error { _, err := tr.GetMBID(ctx); return err }},
+		{"GetDuration", func(ctx context.Context, tr *Track) error { _, err := tr.GetDuration(ctx); return err }},
+		{"GetListenerCount", func(ctx context.Context, tr *Track) error { _, err := tr.GetListenerCount(ctx); return err }},
+		{"GetPlaycount", func(ctx context.Context, tr *Track) error { _, err := tr.GetPlaycount(ctx); return err }},
+		{"GetUserPlaycount", func(ctx context.Context, tr *Track) error { _, err := tr.GetUserPlaycount(ctx); return err }},
+		{"GetSimilar", func(ctx context.Context, tr *Track) error { _, err := tr.GetSimilar(ctx, 5); return err }},
+		{"Love", func(ctx context.Context, tr *Track) error { return tr.Love(ctx) }},
+		{"Unlove", func(ctx context.Context, tr *Track) error { return tr.Unlove(ctx) }},
+		{"GetWikiSummary", func(ctx context.Context, tr *Track) error { _, err := tr.GetWikiSummary(ctx); return err }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := serveXML(sampleErrorXML)
+			defer srv.Close()
+			c := newTestClient(t, srv)
+			if err := tt.call(context.Background(), c.GetTrack("Iron Maiden", "The Trooper")); err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
 	}
 }
 
