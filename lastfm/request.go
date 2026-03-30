@@ -120,8 +120,19 @@ func (r *apiRequest) execute(ctx context.Context, cacheable bool) (*xmlNode, err
 		}
 	}
 
-	body, err := r.download(ctx)
-	if err != nil {
+	var body string
+	fetch := func() error {
+		var ferr error
+		body, ferr = r.download(ctx)
+		return ferr
+	}
+
+	maxAttempts := 1
+	if r.client.maxRetries > 0 {
+		maxAttempts = r.client.maxRetries
+	}
+
+	if err := withRetry(ctx, maxAttempts, fetch); err != nil {
 		return nil, err
 	}
 
