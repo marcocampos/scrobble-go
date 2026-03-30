@@ -8,8 +8,8 @@ on:
     branches: [main]
 
 jobs:
-  ci:
-    name: Build, Test & Lint
+  build:
+    name: Build, Test & Lint (${{ matrix.go }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -44,6 +44,19 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
+
+  ci:
+    name: Build, Test & Lint
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check matrix result
+        run: |
+          if [[ "${{ needs.build.result }}" != "success" ]]; then
+            echo "Build matrix failed or was cancelled: ${{ needs.build.result }}"
+            exit 1
+          fi
 
   release:
     name: Release
