@@ -29,7 +29,7 @@ func newAPIRequest(c *Client, method string, params map[string]string) *apiReque
 		params: make(map[string]string, len(params)+4),
 	}
 	for k, v := range params {
-		r.params[k] = convertParam(v)
+		r.params[k] = v
 	}
 	r.params["api_key"] = c.net.APIKey
 	r.params["method"] = method
@@ -39,22 +39,6 @@ func newAPIRequest(c *Client, method string, params map[string]string) *apiReque
 		r.sign()
 	}
 	return r
-}
-
-// convertParam normalises a parameter value to a string.
-// Boolean true/false become "1"/"0" per the Last.fm API convention.
-func convertParam(v any) string {
-	switch val := v.(type) {
-	case bool:
-		if val {
-			return "1"
-		}
-		return "0"
-	case string:
-		return val
-	default:
-		return fmt.Sprintf("%v", val)
-	}
 }
 
 // sign appends an "api_sig" parameter if one is not already present.
