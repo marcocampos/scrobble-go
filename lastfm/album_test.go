@@ -77,9 +77,12 @@ func TestAlbum_GetUserPlaycount(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(t, srv)
-	_, err := c.GetAlbum("Iron Maiden", "Dance of Death").GetUserPlaycount(context.Background())
+	count, err := c.GetAlbum("Iron Maiden", "Dance of Death").GetUserPlaycount(context.Background())
 	if err != nil {
 		t.Fatalf("GetUserPlaycount: %v", err)
+	}
+	if count != 15 {
+		t.Errorf("UserPlaycount = %v, want 15", count)
 	}
 }
 

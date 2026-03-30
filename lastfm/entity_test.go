@@ -19,6 +19,7 @@ const artistInfoXML = `<lfm status="ok">
     <stats>
       <listeners>3456789</listeners>
       <playcount>123456789</playcount>
+      <userplaycount>42</userplaycount>
     </stats>
     <tags>
       <tag><name>heavy metal</name><count>100</count></tag>
@@ -80,6 +81,9 @@ func TestArtist_GetInfo(t *testing.T) {
 	}
 	if info.Playcount != 123456789 {
 		t.Errorf("Playcount = %d, want 123456789", info.Playcount)
+	}
+	if info.UserPlaycount != 42 {
+		t.Errorf("UserPlaycount = %d, want 42", info.UserPlaycount)
 	}
 	if len(info.TopTags) != 2 {
 		t.Errorf("TopTags = %d, want 2", len(info.TopTags))
@@ -145,6 +149,7 @@ const trackInfoXML = `<lfm status="ok">
     <duration>613000</duration>
     <listeners>500000</listeners>
     <playcount>2000000</playcount>
+    <userplaycount>7</userplaycount>
     <artist>
       <name>Iron Maiden</name>
     </artist>
@@ -183,6 +188,9 @@ func TestTrack_GetInfo(t *testing.T) {
 	}
 	if info.Duration != 613 {
 		t.Errorf("Duration = %d, want 613", info.Duration)
+	}
+	if info.UserPlaycount != 7 {
+		t.Errorf("UserPlaycount = %d, want 7", info.UserPlaycount)
 	}
 	if info.WikiSummary == "" {
 		t.Error("WikiSummary should not be empty")
@@ -242,6 +250,7 @@ const albumInfoXML = `<lfm status="ok">
     <image size="large">https://img.last.fm/large.jpg</image>
     <listeners>300000</listeners>
     <playcount>1500000</playcount>
+    <userplaycount>15</userplaycount>
     <tags>
       <tag><name>heavy metal</name></tag>
     </tags>
@@ -272,6 +281,9 @@ func TestAlbum_GetInfo(t *testing.T) {
 	}
 	if info.Playcount != 1500000 {
 		t.Errorf("Playcount = %d, want 1500000", info.Playcount)
+	}
+	if info.UserPlaycount != 15 {
+		t.Errorf("UserPlaycount = %d, want 15", info.UserPlaycount)
 	}
 	if len(info.Tracks) != 2 {
 		t.Errorf("Tracks = %d, want 2", len(info.Tracks))
