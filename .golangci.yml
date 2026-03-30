@@ -1,0 +1,35 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - errcheck       # unchecked errors
+    - govet          # suspicious constructs
+    - ineffassign    # assigned but never used
+    - staticcheck    # broad static analysis (includes former gosimple rules)
+    - unused         # unused code
+    - misspell       # common spelling mistakes
+    - revive         # drop-in golint replacement
+    - godot          # comment sentences end with a period
+    - noctx          # http.Request without context
+    - gocritic       # opinionated code checks
+  settings:
+    revive:
+      rules:
+        - name: exported
+          arguments:
+            - "checkPrivateReceivers"
+            - "sayRepetitiveInsteadOfStutters"
+    godot:
+      scope: declarations
+      period: true
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+
+issues:
+  exclude-rules:
+    # MD5 is required by the Last.fm API signature scheme — not a security issue.
+    - linters: [gosec]
+      text: "G401|G501"

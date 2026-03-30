@@ -13,8 +13,7 @@ import (
 // applied last so the TLS client always takes effect.
 func newTestClient(t *testing.T, srv *httptest.Server, opts ...Option) *Client {
 	t.Helper()
-	allOpts := append(opts, WithHTTPClient(srv.Client()))
-	c := NewLastFMClient("testapikey", "testapisecret", allOpts...)
+	c := NewLastFMClient("testapikey", "testapisecret", append(opts, WithHTTPClient(srv.Client()))...)
 	// Point the client at the test server (TLS).
 	c.net.WSHost = srv.Listener.Addr().String()
 	c.net.WSPath = "/"
