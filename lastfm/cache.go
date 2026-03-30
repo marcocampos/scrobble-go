@@ -30,6 +30,7 @@ func NewMemoryCache() *MemoryCache {
 	return &MemoryCache{store: make(map[string]string)}
 }
 
+// Get implements CacheBackend.
 func (c *MemoryCache) Get(key string) (string, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -37,6 +38,7 @@ func (c *MemoryCache) Get(key string) (string, bool) {
 	return v, ok
 }
 
+// Set implements CacheBackend.
 func (c *MemoryCache) Set(key, value string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -77,6 +79,7 @@ func NewBoltCache(path string) (*BoltCache, error) {
 // Get retrieves a cached value. Returns ("", false) if not found or on error.
 func (c *BoltCache) Get(key string) (string, bool) {
 	var value string
+	var found bool
 	err := c.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket(boltBucket)
 		if b == nil {
@@ -85,13 +88,14 @@ func (c *BoltCache) Get(key string) (string, bool) {
 		v := b.Get([]byte(key))
 		if v != nil {
 			value = string(v)
+			found = true
 		}
 		return nil
 	})
-	if err != nil || value == "" {
+	if err != nil {
 		return "", false
 	}
-	return value, true
+	return value, found
 }
 
 // Set stores a value in the cache. Silently ignores write errors.

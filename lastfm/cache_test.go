@@ -23,6 +23,18 @@ func TestMemoryCache_GetSet(t *testing.T) {
 	}
 }
 
+func TestMemoryCache_EmptyStringHit(t *testing.T) {
+	c := NewMemoryCache()
+	c.Set("key", "")
+	v, ok := c.Get("key")
+	if !ok {
+		t.Error("Get after Set(\"\") returned false; empty string should be a cache hit")
+	}
+	if v != "" {
+		t.Errorf("Get = %q, want %q", v, "")
+	}
+}
+
 func TestMemoryCache_Overwrite(t *testing.T) {
 	c := NewMemoryCache()
 	c.Set("k", "v1")
@@ -52,6 +64,24 @@ func TestBoltCache_GetSet(t *testing.T) {
 	}
 	if v != "value1" {
 		t.Errorf("Get = %q, want %q", v, "value1")
+	}
+}
+
+func TestBoltCache_EmptyStringHit(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "empty.db")
+	c, err := NewBoltCache(path)
+	if err != nil {
+		t.Fatalf("NewBoltCache: %v", err)
+	}
+	defer func() { _ = c.Close() }()
+
+	c.Set("key", "")
+	v, ok := c.Get("key")
+	if !ok {
+		t.Error("Get after Set(\"\") returned false; empty string should be a cache hit")
+	}
+	if v != "" {
+		t.Errorf("Get = %q, want %q", v, "")
 	}
 }
 
