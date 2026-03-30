@@ -48,7 +48,10 @@ func (s *ArtistSearch) GetPage(ctx context.Context, page int) ([]*Artist, error)
 	return result, nil
 }
 
-// All returns an iterator over every artist across all pages.
+// All returns an iterator over every artist across all pages, always starting
+// from page 1 regardless of any prior GetNextPage calls. It is independent of
+// the internal page cursor; mixing All with GetNextPage on the same search
+// object is not supported and may produce duplicate results.
 // Use it with a range-over-func loop (Go 1.23+):
 //
 //	for artist, err := range search.All(ctx) {
@@ -127,7 +130,10 @@ func (s *AlbumSearch) GetPage(ctx context.Context, page int) ([]*Album, error) {
 	return result, nil
 }
 
-// All returns an iterator over every album across all pages.
+// All returns an iterator over every album across all pages, always starting
+// from page 1 regardless of any prior GetNextPage calls. It is independent of
+// the internal page cursor; mixing All with GetNextPage on the same search
+// object is not supported and may produce duplicate results.
 // Use it with a range-over-func loop (Go 1.23+):
 //
 //	for album, err := range search.All(ctx) {
@@ -145,8 +151,8 @@ func (s *AlbumSearch) All(ctx context.Context) iter.Seq2[*Album, error] {
 			if len(results) == 0 {
 				return
 			}
-			for _, a := range results {
-				if !yield(a, nil) {
+			for _, album := range results {
+				if !yield(album, nil) {
 					return
 				}
 			}
@@ -211,7 +217,10 @@ func (s *TrackSearch) GetPage(ctx context.Context, page int) ([]*Track, error) {
 	return result, nil
 }
 
-// All returns an iterator over every track across all pages.
+// All returns an iterator over every track across all pages, always starting
+// from page 1 regardless of any prior GetNextPage calls. It is independent of
+// the internal page cursor; mixing All with GetNextPage on the same search
+// object is not supported and may produce duplicate results.
 // Use it with a range-over-func loop (Go 1.23+):
 //
 //	for track, err := range search.All(ctx) {

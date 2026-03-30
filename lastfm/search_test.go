@@ -154,8 +154,11 @@ const emptyTrackSearchXML = `<lfm status="ok">
 
 // servePages returns a TLS server that responds with pages[0] on the first
 // request, pages[1] on the second, and so on. The last entry is repeated for
-// any additional requests.
+// any additional requests. Panics if called with no pages.
 func servePages(pages ...string) *httptest.Server {
+	if len(pages) == 0 {
+		panic("servePages: at least one page response must be provided")
+	}
 	calls := 0
 	return httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/xml; charset=utf-8")
