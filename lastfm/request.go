@@ -128,8 +128,8 @@ func (r *apiRequest) execute(ctx context.Context, cacheable bool) (*xmlNode, err
 	}
 
 	maxAttempts := 1
-	if r.client.maxRetries > 0 {
-		maxAttempts = r.client.maxRetries
+	if r.client.maxAttempts > 0 {
+		maxAttempts = r.client.maxAttempts
 	}
 
 	if err := withRetry(ctx, maxAttempts, fetch); err != nil {

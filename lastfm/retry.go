@@ -2,13 +2,14 @@ package lastfm
 
 import (
 	"context"
+	"errors"
 	"math/rand/v2"
-	"net/http"
 	"time"
 )
 
 const (
 	retryBaseDelay = 100 * time.Millisecond
+	retryMaxDelay  = 30 * time.Second
 	retryJitter    = 0.25 // ±25% jitter applied to each delay
 )
 
@@ -17,6 +18,9 @@ const (
 // retryBaseDelay with ±retryJitter jitter. Non-retriable errors (WSError,
 // context cancellation) are returned immediately without further attempts.
 func withRetry(ctx context.Context, maxAttempts int, fn func() error) error {
+	if maxAttempts < 1 {
+		maxAttempts = 1
+	}
 	var err error
 	for attempt := range maxAttempts {
 		err = fn()
@@ -32,11 +36,14 @@ func withRetry(ctx context.Context, maxAttempts int, fn func() error) error {
 			break
 		}
 
-		delay := retryDelay(attempt)
+		timer := time.NewTimer(retryDelay(attempt))
 		select {
 		case <-ctx.Done():
+			if !timer.Stop() {
+				<-timer.C
+			}
 			return ctx.Err()
-		case <-time.After(delay):
+		case <-timer.C:
 		}
 	}
 	return err
@@ -49,16 +56,14 @@ func isRetriable(err error) bool {
 	if err == nil {
 		return false
 	}
-	if _, ok := err.(*NetworkError); ok {
+	var netErr *NetworkError
+	if errors.As(err, &netErr) {
 		return true
 	}
-	if wsErr, ok := err.(*WSError); ok {
+	var wsErr *WSError
+	if errors.As(err, &wsErr) {
 		switch wsErr.Status {
-		case
-			http.StatusText(http.StatusBadGateway),
-			http.StatusText(http.StatusServiceUnavailable),
-			http.StatusText(http.StatusGatewayTimeout),
-			"502", "503", "504":
+		case "502", "503", "504":
 			return true
 		}
 	}
@@ -67,8 +72,17 @@ func isRetriable(err error) bool {
 
 // retryDelay returns the backoff duration for a given attempt index (0-based),
 // applying exponential growth and ±retryJitter random jitter.
+// The base delay is capped at retryMaxDelay; the loop-based doubling avoids
+// any integer overflow regardless of the attempt value.
 func retryDelay(attempt int) time.Duration {
-	base := retryBaseDelay * (1 << uint(attempt)) // 100ms, 200ms, 400ms, …
+	base := retryBaseDelay
+	for range attempt {
+		if base >= retryMaxDelay/2 {
+			base = retryMaxDelay
+			break
+		}
+		base *= 2
+	}
 	jitter := float64(base) * retryJitter * (2*rand.Float64() - 1)
 	return base + time.Duration(jitter)
 }

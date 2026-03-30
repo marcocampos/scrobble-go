@@ -31,11 +31,11 @@ type network struct {
 // Client is the entry point for all Last.fm API interactions.
 // Create one with NewLastFMClient or NewLibreFMClient.
 type Client struct {
-	net        *network
-	httpClient *http.Client
-	cache      CacheBackend
-	rateLimit  bool
-	maxRetries int
+	net         *network
+	httpClient  *http.Client
+	cache       CacheBackend
+	rateLimit   bool
+	maxAttempts int
 
 	mu       sync.Mutex
 	lastCall time.Time
@@ -85,7 +85,7 @@ func WithRetry(maxAttempts ...int) Option {
 	if len(maxAttempts) > 0 && maxAttempts[0] >= 1 {
 		attempts = maxAttempts[0]
 	}
-	return func(c *Client) { c.maxRetries = attempts }
+	return func(c *Client) { c.maxAttempts = attempts }
 }
 
 // newClient creates a Client for the given network, applying all options.

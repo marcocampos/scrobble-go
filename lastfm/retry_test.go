@@ -3,6 +3,7 @@ package lastfm
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -87,6 +88,20 @@ func TestWithRetry_ContextCancelledDuringBackoff(t *testing.T) {
 	}
 }
 
+func TestWithRetry_ZeroMaxAttempts(t *testing.T) {
+	calls := 0
+	err := withRetry(context.Background(), 0, func() error {
+		calls++
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if calls != 1 {
+		t.Errorf("expected fn to be called once when maxAttempts=0, got %d", calls)
+	}
+}
+
 // ── isRetriable ───────────────────────────────────────────────────────────────
 
 func TestIsRetriable(t *testing.T) {
@@ -97,10 +112,13 @@ func TestIsRetriable(t *testing.T) {
 	}{
 		{"nil", nil, false},
 		{"NetworkError", &NetworkError{NetworkName: "x", UnderlyingError: errors.New("x")}, true},
+		{"wrapped NetworkError", fmt.Errorf("outer: %w", &NetworkError{NetworkName: "x", UnderlyingError: errors.New("x")}), true},
 		{"WSError 502", &WSError{Status: "502"}, true},
 		{"WSError 503", &WSError{Status: "503"}, true},
 		{"WSError 504", &WSError{Status: "504"}, true},
+		{"wrapped WSError 503", fmt.Errorf("outer: %w", &WSError{Status: "503"}), true},
 		{"WSError 6 (invalid params)", &WSError{Status: "6"}, false},
+		{"wrapped WSError non-retriable", fmt.Errorf("outer: %w", &WSError{Status: "6"}), false},
 		{"generic error", errors.New("something"), false},
 	}
 	for _, tt := range tests {
@@ -113,6 +131,16 @@ func TestIsRetriable(t *testing.T) {
 }
 
 // ── retryDelay ────────────────────────────────────────────────────────────────
+
+func TestRetryDelay_LargeAttemptCapped(t *testing.T) {
+	// A very large attempt index would overflow int64; the cap should kick in.
+	d := retryDelay(100)
+	lo := time.Duration(float64(retryMaxDelay) * 0.75)
+	hi := time.Duration(float64(retryMaxDelay) * 1.25)
+	if d < lo || d > hi {
+		t.Errorf("retryDelay(100) = %v, want in [%v, %v]", d, lo, hi)
+	}
+}
 
 func TestRetryDelay_ExponentialGrowth(t *testing.T) {
 	d0 := retryDelay(0)
@@ -138,21 +166,21 @@ func TestRetryDelay_ExponentialGrowth(t *testing.T) {
 
 func TestWithRetryOption_DefaultThreeAttempts(t *testing.T) {
 	c := NewLastFMClient("k", "s", WithRetry())
-	if c.maxRetries != 3 {
-		t.Errorf("maxRetries = %d, want 3", c.maxRetries)
+	if c.maxAttempts != 3 {
+		t.Errorf("maxAttempts = %d, want 3", c.maxAttempts)
 	}
 }
 
 func TestWithRetryOption_CustomAttempts(t *testing.T) {
 	c := NewLastFMClient("k", "s", WithRetry(5))
-	if c.maxRetries != 5 {
-		t.Errorf("maxRetries = %d, want 5", c.maxRetries)
+	if c.maxAttempts != 5 {
+		t.Errorf("maxAttempts = %d, want 5", c.maxAttempts)
 	}
 }
 
 func TestWithRetryOption_InvalidValueUsesDefault(t *testing.T) {
 	c := NewLastFMClient("k", "s", WithRetry(0))
-	if c.maxRetries != 3 {
-		t.Errorf("maxRetries = %d, want 3 for invalid input", c.maxRetries)
+	if c.maxAttempts != 3 {
+		t.Errorf("maxAttempts = %d, want 3 for invalid input", c.maxAttempts)
 	}
 }
