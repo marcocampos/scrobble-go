@@ -61,8 +61,8 @@ type AlbumInfo struct {
 // that user's personal play count (UserPlaycount).
 func (a *Album) GetInfo(ctx context.Context) (*AlbumInfo, error) {
 	params := a.baseParams()
-	if a.username != "" {
-		params["username"] = a.username
+	if username := a.client.net.Username; username != "" {
+		params["username"] = username
 	}
 	doc, err := newAPIRequest(a.client, "album.getInfo", params).execute(ctx, true)
 	if err != nil {
