@@ -138,21 +138,21 @@ func TestRetryDelay_ExponentialGrowth(t *testing.T) {
 
 func TestWithRetryOption_DefaultThreeAttempts(t *testing.T) {
 	c := NewLastFMClient("k", "s", WithRetry())
-	if c.maxRetries != 3 {
-		t.Errorf("maxRetries = %d, want 3", c.maxRetries)
+	if c.maxAttempts != 3 {
+		t.Errorf("maxAttempts = %d, want 3", c.maxAttempts)
 	}
 }
 
 func TestWithRetryOption_CustomAttempts(t *testing.T) {
 	c := NewLastFMClient("k", "s", WithRetry(5))
-	if c.maxRetries != 5 {
-		t.Errorf("maxRetries = %d, want 5", c.maxRetries)
+	if c.maxAttempts != 5 {
+		t.Errorf("maxAttempts = %d, want 5", c.maxAttempts)
 	}
 }
 
 func TestWithRetryOption_InvalidValueUsesDefault(t *testing.T) {
 	c := NewLastFMClient("k", "s", WithRetry(0))
-	if c.maxRetries != 3 {
-		t.Errorf("maxRetries = %d, want 3 for invalid input", c.maxRetries)
+	if c.maxAttempts != 3 {
+		t.Errorf("maxAttempts = %d, want 3 for invalid input", c.maxAttempts)
 	}
 }
