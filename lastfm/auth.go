@@ -3,6 +3,7 @@ package lastfm
 import (
 	"context"
 	"fmt"
+	"sync"
 )
 
 // SessionKeyGenerator handles the two flows for obtaining a Last.fm session key:
@@ -14,6 +15,7 @@ import (
 // Once obtained, pass it to NewLastFMClient via WithSessionKey.
 type SessionKeyGenerator struct {
 	client        *Client
+	mu            sync.RWMutex
 	webAuthTokens map[string]string // url → token
 }
 
@@ -68,7 +70,9 @@ func (g *SessionKeyGenerator) GetWebAuthURL(ctx context.Context) (string, error)
 		g.client.net.APIKey,
 		token,
 	)
+	g.mu.Lock()
 	g.webAuthTokens[authURL] = token
+	g.mu.Unlock()
 	return authURL, nil
 }
 
@@ -83,8 +87,11 @@ func (g *SessionKeyGenerator) GetWebAuthSessionKey(ctx context.Context, authURL 
 
 // GetWebAuthSessionKeyAndUsername is like GetWebAuthSessionKey but also returns
 // the authenticated username.
-func (g *SessionKeyGenerator) GetWebAuthSessionKeyAndUsername(ctx context.Context, authURL, token string) (string, string, error) {
-	if t, ok := g.webAuthTokens[authURL]; ok {
+func (g *SessionKeyGenerator) GetWebAuthSessionKeyAndUsername(ctx context.Context, authURL, token string) (sessionKey, username string, err error) {
+	g.mu.RLock()
+	t, ok := g.webAuthTokens[authURL]
+	g.mu.RUnlock()
+	if ok {
 		token = t
 	}
 	if token == "" {
@@ -99,15 +106,15 @@ func (g *SessionKeyGenerator) GetWebAuthSessionKeyAndUsername(ctx context.Contex
 		return "", "", fmt.Errorf("GetWebAuthSessionKeyAndUsername: %w", err)
 	}
 
-	sk := extract(doc, "key")
-	username := extract(doc, "name")
-	if sk == "" {
+	sessionKey = extract(doc, "key")
+	username = extract(doc, "name")
+	if sessionKey == "" {
 		return "", "", &MalformedResponseError{
 			NetworkName:     g.client.net.Name,
 			UnderlyingError: fmt.Errorf("no <key> element in auth.getSession response"),
 		}
 	}
-	return sk, username, nil
+	return sessionKey, username, nil
 }
 
 // AuthenticateWithPassword is a convenience wrapper that runs mobile auth and
