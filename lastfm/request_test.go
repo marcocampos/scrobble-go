@@ -9,11 +9,11 @@ import (
 
 // newTestClient returns a Client wired to the given TLS test server.
 // The server's own Client() is used so the self-signed cert is trusted.
-// Additional options (e.g. WithRetry) may be passed and are applied after
-// the mandatory WithHTTPClient option.
+// Additional options (e.g. WithRetry) may be passed; WithHTTPClient is
+// applied last so the TLS client always takes effect.
 func newTestClient(t *testing.T, srv *httptest.Server, opts ...Option) *Client {
 	t.Helper()
-	allOpts := append([]Option{WithHTTPClient(srv.Client())}, opts...)
+	allOpts := append(opts, WithHTTPClient(srv.Client()))
 	c := NewLastFMClient("testapikey", "testapisecret", allOpts...)
 	// Point the client at the test server (TLS).
 	c.net.WSHost = srv.Listener.Addr().String()
