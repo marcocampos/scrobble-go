@@ -246,7 +246,20 @@ func checkAPIErrors(body, networkName string) (*xmlNode, error) {
 			UnderlyingError: fmt.Errorf("status=%q but no <error> element found", doc.attr("status")),
 		}
 	}
-	code, _ := strconv.Atoi(errEl.attr("code"))
+	codeStr := errEl.attr("code")
+	if codeStr == "" {
+		return nil, &MalformedResponseError{
+			NetworkName:     networkName,
+			UnderlyingError: fmt.Errorf("missing error code on <error> element"),
+		}
+	}
+	code, err := strconv.Atoi(codeStr)
+	if err != nil {
+		return nil, &MalformedResponseError{
+			NetworkName:     networkName,
+			UnderlyingError: fmt.Errorf("invalid error code %q: %w", codeStr, err),
+		}
+	}
 	return nil, &WSError{
 		Status:      code,
 		Details:     strings.TrimSpace(errEl.Content),

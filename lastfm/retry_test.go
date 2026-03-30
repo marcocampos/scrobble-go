@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 )
@@ -141,10 +142,10 @@ func TestIsRetriable(t *testing.T) {
 		{"nil", nil, false},
 		{"NetworkError", &NetworkError{NetworkName: "x", UnderlyingError: errors.New("x")}, true},
 		{"wrapped NetworkError", fmt.Errorf("outer: %w", &NetworkError{NetworkName: "x", UnderlyingError: errors.New("x")}), true},
-		{"WSError 502", &WSError{Status: 502}, true},
-		{"WSError 503", &WSError{Status: 503}, true},
-		{"WSError 504", &WSError{Status: 504}, true},
-		{"wrapped WSError 503", fmt.Errorf("outer: %w", &WSError{Status: 503}), true},
+		{"WSError 502", &WSError{Status: http.StatusBadGateway}, true},
+		{"WSError 503", &WSError{Status: http.StatusServiceUnavailable}, true},
+		{"WSError 504", &WSError{Status: http.StatusGatewayTimeout}, true},
+		{"wrapped WSError 503", fmt.Errorf("outer: %w", &WSError{Status: http.StatusServiceUnavailable}), true},
 		{"WSError 6 (invalid params)", &WSError{Status: StatusInvalidParams}, false},
 		{"wrapped WSError non-retriable", fmt.Errorf("outer: %w", &WSError{Status: StatusInvalidParams}), false},
 		{"generic error", errors.New("something"), false},

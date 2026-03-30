@@ -34,9 +34,10 @@ const (
 
 // WSError is returned when the Last.fm web service responds with an error.
 type WSError struct {
-	// Status is the numeric error code from the API (e.g. StatusInvalidAPIKey).
+	// Status is either a Last.fm API error code (e.g. StatusInvalidAPIKey)
+	// or an HTTP status code (e.g. 502) for transient server failures.
 	Status int
-	// Details is the human-readable error message from the API.
+	// Details is the human-readable error message from the API or HTTP layer.
 	Details     string
 	networkName string
 }

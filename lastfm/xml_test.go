@@ -194,6 +194,28 @@ func TestCheckAPIErrors_StatusNotOkNoErrorElement(t *testing.T) {
 	}
 }
 
+func TestCheckAPIErrors_MissingErrorCode(t *testing.T) {
+	xml := `<lfm status="failed"><error>Something went wrong</error></lfm>`
+	_, err := checkAPIErrors(xml, "Last.fm")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if _, ok := err.(*MalformedResponseError); !ok {
+		t.Errorf("expected *MalformedResponseError, got %T", err)
+	}
+}
+
+func TestCheckAPIErrors_InvalidErrorCode(t *testing.T) {
+	xml := `<lfm status="failed"><error code="abc">Bad code</error></lfm>`
+	_, err := checkAPIErrors(xml, "Last.fm")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if _, ok := err.(*MalformedResponseError); !ok {
+		t.Errorf("expected *MalformedResponseError, got %T", err)
+	}
+}
+
 func TestCheckAPIErrors_DebugLogging(t *testing.T) {
 	// Install a debug-level handler so the slog.Debug branch is executed.
 	h := slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelDebug})
