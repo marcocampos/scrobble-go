@@ -133,30 +133,30 @@ func (t *Track) GetDuration(ctx context.Context) (int, error) {
 }
 
 // GetListenerCount returns the number of Last.fm listeners.
-func (t *Track) GetListenerCount(ctx context.Context) (float64, error) {
+func (t *Track) GetListenerCount(ctx context.Context) (int64, error) {
 	info, err := t.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Track.GetListenerCount: %w", err)
 	}
-	return float64(info.Listeners), nil
+	return info.Listeners, nil
 }
 
 // GetPlaycount returns the total play count on Last.fm.
-func (t *Track) GetPlaycount(ctx context.Context) (float64, error) {
+func (t *Track) GetPlaycount(ctx context.Context) (int64, error) {
 	info, err := t.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Track.GetPlaycount: %w", err)
 	}
-	return float64(info.Playcount), nil
+	return info.Playcount, nil
 }
 
 // GetUserPlaycount returns the play count for the authenticated user.
-func (t *Track) GetUserPlaycount(ctx context.Context) (float64, error) {
+func (t *Track) GetUserPlaycount(ctx context.Context) (int64, error) {
 	info, err := t.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Track.GetUserPlaycount: %w", err)
 	}
-	return float64(info.UserPlaycount), nil
+	return info.UserPlaycount, nil
 }
 
 // GetSimilar returns tracks similar to this one.

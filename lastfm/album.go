@@ -124,30 +124,30 @@ func (a *Album) GetMBID(ctx context.Context) (string, error) {
 }
 
 // GetListenerCount returns the number of Last.fm listeners.
-func (a *Album) GetListenerCount(ctx context.Context) (float64, error) {
+func (a *Album) GetListenerCount(ctx context.Context) (int64, error) {
 	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Album.GetListenerCount: %w", err)
 	}
-	return float64(info.Listeners), nil
+	return info.Listeners, nil
 }
 
 // GetPlaycount returns the total play count on Last.fm.
-func (a *Album) GetPlaycount(ctx context.Context) (float64, error) {
+func (a *Album) GetPlaycount(ctx context.Context) (int64, error) {
 	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Album.GetPlaycount: %w", err)
 	}
-	return float64(info.Playcount), nil
+	return info.Playcount, nil
 }
 
 // GetUserPlaycount returns the play count for the authenticated user.
-func (a *Album) GetUserPlaycount(ctx context.Context) (float64, error) {
+func (a *Album) GetUserPlaycount(ctx context.Context) (int64, error) {
 	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Album.GetUserPlaycount: %w", err)
 	}
-	return float64(info.UserPlaycount), nil
+	return info.UserPlaycount, nil
 }
 
 // GetCoverImage returns the URL of the album cover at the given size.
