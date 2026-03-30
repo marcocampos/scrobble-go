@@ -94,6 +94,46 @@ func TestGetWebAuthURL(t *testing.T) {
 	}
 }
 
+func TestGetWebAuthSessionKeyAndUsername_TokenFromMap(t *testing.T) {
+	// First request returns a token; second returns a session.
+	srv := servePages(webAuthTokenXML, webAuthSessionXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	gen := NewSessionKeyGenerator(c)
+
+	// GetWebAuthURL stores the token internally keyed by the returned URL.
+	authURL, err := gen.GetWebAuthURL(context.Background())
+	if err != nil {
+		t.Fatalf("GetWebAuthURL: %v", err)
+	}
+
+	// GetWebAuthSessionKeyAndUsername should look up the token from the map.
+	sk, username, err := gen.GetWebAuthSessionKeyAndUsername(context.Background(), authURL, "")
+	if err != nil {
+		t.Fatalf("GetWebAuthSessionKeyAndUsername: %v", err)
+	}
+	if sk != "websessionkey99" {
+		t.Errorf("session key = %q, want %q", sk, "websessionkey99")
+	}
+	if username != "webuser" {
+		t.Errorf("username = %q, want %q", username, "webuser")
+	}
+}
+
+func TestGetWebAuthSessionKeyAndUsername_WSError(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	gen := NewSessionKeyGenerator(c)
+
+	_, _, err := gen.GetWebAuthSessionKeyAndUsername(context.Background(), "", "sometoken")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
 func TestGetWebAuthSessionKeyAndUsername_Success(t *testing.T) {
 	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/xml; charset=utf-8")
@@ -132,6 +172,82 @@ func TestGetWebAuthSessionKey_TokenUnauthorized(t *testing.T) {
 	// Should fail with "no token for URL" before even hitting the server.
 	if err == nil {
 		t.Fatal("expected error for empty URL, got nil")
+	}
+}
+
+func TestGetWebAuthURL_Error(t *testing.T) {
+	// Server returns an API error, so getWebAuthToken (and thus GetWebAuthURL) should fail.
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	gen := NewSessionKeyGenerator(c)
+
+	_, err := gen.GetWebAuthURL(context.Background())
+	if err == nil {
+		t.Fatal("expected error from GetWebAuthURL when token fetch fails, got nil")
+	}
+}
+
+func TestGetWebAuthToken_EmptyToken(t *testing.T) {
+	// Server returns OK but with no <token> element.
+	srv := serveXML(`<lfm status="ok"></lfm>`)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	gen := NewSessionKeyGenerator(c)
+
+	_, err := gen.GetWebAuthURL(context.Background())
+	if err == nil {
+		t.Fatal("expected MalformedResponseError for empty token, got nil")
+	}
+	if _, ok := err.(*MalformedResponseError); !ok {
+		t.Errorf("expected *MalformedResponseError, got %T: %v", err, err)
+	}
+}
+
+func TestGetSessionKey_EmptyKey(t *testing.T) {
+	// Server returns OK session but with no <key> element.
+	srv := serveXML(`<lfm status="ok"><session><name>user</name></session></lfm>`)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	gen := NewSessionKeyGenerator(c)
+
+	_, err := gen.GetSessionKey(context.Background(), "user", "hash")
+	if err == nil {
+		t.Fatal("expected MalformedResponseError for empty session key, got nil")
+	}
+	if _, ok := err.(*MalformedResponseError); !ok {
+		t.Errorf("expected *MalformedResponseError, got %T: %v", err, err)
+	}
+}
+
+func TestGetWebAuthSessionKeyAndUsername_EmptySessionKey(t *testing.T) {
+	// Server returns OK session but with no <key> element.
+	srv := serveXML(`<lfm status="ok"><session><name>user</name></session></lfm>`)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	gen := NewSessionKeyGenerator(c)
+
+	_, _, err := gen.GetWebAuthSessionKeyAndUsername(context.Background(), "", "sometoken")
+	if err == nil {
+		t.Fatal("expected MalformedResponseError for empty session key, got nil")
+	}
+	if _, ok := err.(*MalformedResponseError); !ok {
+		t.Errorf("expected *MalformedResponseError, got %T: %v", err, err)
+	}
+}
+
+func TestAuthenticateWithPassword_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	err := c.AuthenticateWithPassword(context.Background(), "user", MD5("badpass"))
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
 }
 

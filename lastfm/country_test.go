@@ -52,6 +52,28 @@ func TestCountry_GetTopTracks(t *testing.T) {
 	}
 }
 
+func TestCountry_GetTopArtists_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetCountry("Germany").GetTopArtists(context.Background(), 5)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestCountry_GetTopTracks_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetCountry("Germany").GetTopTracks(context.Background(), 5)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
 func TestCountry_GetURL(t *testing.T) {
 	c := NewLastFMClient("k", "s")
 	url := c.GetCountry("Germany").GetURL(DomainEnglish)

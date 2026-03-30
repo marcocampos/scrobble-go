@@ -86,6 +86,39 @@ func TestTag_GetTopTracks(t *testing.T) {
 	}
 }
 
+func TestTag_GetInfo_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTag("heavy metal").GetInfo(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTag_GetTopArtists_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTag("heavy metal").GetTopArtists(context.Background(), 5)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTag_GetTopTracks_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTag("heavy metal").GetTopTracks(context.Background(), 5)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
 func TestTag_GetTopAlbums(t *testing.T) {
 	srv := serveXML(topAlbumsXML)
 	defer srv.Close()
@@ -97,5 +130,16 @@ func TestTag_GetTopAlbums(t *testing.T) {
 	}
 	if len(albums) != 1 {
 		t.Fatalf("len(albums) = %d, want 1", len(albums))
+	}
+}
+
+func TestTag_GetTopAlbums_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTag("heavy metal").GetTopAlbums(context.Background(), 5)
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
 }

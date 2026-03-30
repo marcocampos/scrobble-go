@@ -361,6 +361,39 @@ func TestTrackSearch_GetTotalResultCount(t *testing.T) {
 	}
 }
 
+func TestArtistSearch_GetTotalResultCount_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.SearchForArtist("iron maiden").GetTotalResultCount(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestAlbumSearch_GetTotalResultCount_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.SearchForAlbum("dance of death").GetTotalResultCount(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTrackSearch_GetTotalResultCount_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.SearchForTrack("Iron Maiden", "The Nomad").GetTotalResultCount(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
 func TestTrackSearch_EmptyArtist(t *testing.T) {
 	srv := serveXML(trackSearchXML)
 	defer srv.Close()

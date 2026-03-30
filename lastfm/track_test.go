@@ -30,6 +30,17 @@ func TestTrack_String(t *testing.T) {
 	}
 }
 
+func TestTrack_GetInfo_WithUsername(t *testing.T) {
+	srv := serveXML(trackInfoXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv, WithUsername("testuser"))
+	_, err := c.GetTrack("Iron Maiden", "The Nomad").GetInfo(context.Background())
+	if err != nil {
+		t.Fatalf("GetInfo (with username): %v", err)
+	}
+}
+
 func TestTrack_GetMBID(t *testing.T) {
 	srv := serveXML(trackInfoXML)
 	defer srv.Close()
@@ -229,6 +240,119 @@ func TestTrack_GetURL(t *testing.T) {
 	url := c.GetTrack("Iron Maiden", "The Trooper").GetURL(DomainEnglish)
 	if url == "" {
 		t.Error("GetURL should return a non-empty string")
+	}
+}
+
+func TestTrack_getWiki_DefaultSection(t *testing.T) {
+	srv := serveXML(trackInfoXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	result, err := c.GetTrack("Iron Maiden", "The Nomad").getWiki(context.Background(), "unknown")
+	if err != nil {
+		t.Fatalf("getWiki: %v", err)
+	}
+	if result != "" {
+		t.Errorf("getWiki with unknown section = %q, want empty", result)
+	}
+}
+
+func TestTrack_GetMBID_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTrack("Iron Maiden", "The Trooper").GetMBID(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTrack_GetDuration_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTrack("Iron Maiden", "The Trooper").GetDuration(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTrack_GetListenerCount_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTrack("Iron Maiden", "The Trooper").GetListenerCount(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTrack_GetPlaycount_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTrack("Iron Maiden", "The Trooper").GetPlaycount(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTrack_GetUserPlaycount_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTrack("Iron Maiden", "The Trooper").GetUserPlaycount(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTrack_GetSimilar_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTrack("Iron Maiden", "The Trooper").GetSimilar(context.Background(), 5)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTrack_Love_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	err := c.GetTrack("Iron Maiden", "The Trooper").Love(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTrack_Unlove_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	err := c.GetTrack("Iron Maiden", "The Trooper").Unlove(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestTrack_GetWikiSummary_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetTrack("Iron Maiden", "The Trooper").GetWikiSummary(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
 	}
 }
 

@@ -1,6 +1,9 @@
 package lastfm
 
 import (
+	"io"
+	"log/slog"
+	"strings"
 	"testing"
 )
 
@@ -170,5 +173,42 @@ func TestCheckAPIErrors_MalformedXML(t *testing.T) {
 	}
 	if _, ok := err.(*MalformedResponseError); !ok {
 		t.Errorf("expected *MalformedResponseError, got %T", err)
+	}
+}
+
+func TestCheckAPIErrors_StatusNotOkNoErrorElement(t *testing.T) {
+	// status="failed" but no <error> child element.
+	xml := `<lfm status="failed"></lfm>`
+	err := checkAPIErrors(xml, "Last.fm")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if _, ok := err.(*MalformedResponseError); !ok {
+		t.Errorf("expected *MalformedResponseError, got %T", err)
+	}
+}
+
+func TestCheckAPIErrors_DebugLogging(t *testing.T) {
+	// Install a debug-level handler so the slog.Debug branch is executed.
+	h := slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelDebug})
+	old := slog.Default()
+	slog.SetDefault(slog.New(h))
+	defer slog.SetDefault(old)
+
+	if err := checkAPIErrors(sampleArtistXML, "Last.fm"); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestCheckAPIErrors_DebugLogging_LongBody(t *testing.T) {
+	// Body longer than 500 chars exercises the truncation branch inside the debug block.
+	h := slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelDebug})
+	old := slog.Default()
+	slog.SetDefault(slog.New(h))
+	defer slog.SetDefault(old)
+
+	body := `<lfm status="ok"><data>` + strings.Repeat("x", 600) + `</data></lfm>`
+	if err := checkAPIErrors(body, "Last.fm"); err != nil {
+		t.Errorf("unexpected error: %v", err)
 	}
 }

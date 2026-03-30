@@ -219,6 +219,138 @@ func TestUser_GetNowPlaying_None(t *testing.T) {
 	}
 }
 
+func TestUser_GetInfo_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetInfo(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetRecentTracks_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetRecentTracks(context.Background(), 10, 0)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetNowPlaying_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetNowPlaying(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetLovedTracks_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetLovedTracks(context.Background(), 10, 1)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetTopArtists_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetTopArtists(context.Background(), PeriodOverall, 5)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetTopAlbums_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetTopAlbums(context.Background(), Period7Days, 5)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetTopTracks_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetTopTracks(context.Background(), Period1Month, 5)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetPlaycount_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetPlaycount(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetWeeklyChartDates_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetWeeklyChartDates(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetWeeklyArtistCharts_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetWeeklyArtistCharts(context.Background(), "1609459200", "1610064000")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetWeeklyTrackCharts_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetWeeklyTrackCharts(context.Background(), "1609459200", "1610064000")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestUser_GetWeeklyAlbumCharts_Error(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.GetUser("testuser").GetWeeklyAlbumCharts(context.Background(), "1609459200", "1610064000")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
 func TestUser_GetInfo_MissingNode(t *testing.T) {
 	srv := serveXML(`<lfm status="ok"><results></results></lfm>`)
 	defer srv.Close()
