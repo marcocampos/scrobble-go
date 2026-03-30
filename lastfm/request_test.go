@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 // newTestClient returns a Client wired to the given TLS test server.
@@ -213,18 +214,17 @@ func TestAPIRequest_Execute_RateLimitContextCancellation(t *testing.T) {
 	c := newTestClient(t, srv)
 	c.rateLimit = true
 
-	// Prime lastCall so the next delayCall will need to wait.
-	r := newAPIRequest(c, "artist.getInfo", map[string]string{"artist": "Iron Maiden"})
-	if _, err := r.execute(context.Background(), false); err != nil {
-		t.Fatalf("prime call: %v", err)
-	}
+	// Set lastCall to now so delayCall will need to wait the full delay.
+	c.mu.Lock()
+	c.lastCall = time.Now()
+	c.mu.Unlock()
 
 	// Cancel context immediately — delayCall should return ctx.Err().
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
-	r2 := newAPIRequest(c, "artist.getInfo", map[string]string{"artist": "Iron Maiden"})
-	_, err := r2.execute(ctx, false)
+	r := newAPIRequest(c, "artist.getInfo", map[string]string{"artist": "Iron Maiden"})
+	_, err := r.execute(ctx, false)
 	if err == nil {
 		t.Fatal("expected context cancellation error, got nil")
 	}

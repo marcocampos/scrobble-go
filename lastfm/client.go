@@ -174,15 +174,29 @@ func NewLibreFMClient(apiKey, apiSecret string, opts ...Option) *Client {
 // delayCall sleeps until at least delayTime has elapsed since the last call,
 // honouring the provided context. Returns ctx.Err() if the context is
 // cancelled before the delay expires.
+//
+// It uses a reservation scheme: under the lock it advances lastCall to the
+// next allowed slot, then waits outside the lock. This ensures concurrent
+// callers are spaced correctly.
 func (c *Client) delayCall(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	c.mu.Lock()
-	wait := delayTime - time.Since(c.lastCall)
+	now := time.Now()
+	next := c.lastCall.Add(delayTime)
+
+	var wait time.Duration
+	if now.Before(next) {
+		wait = next.Sub(now)
+		c.lastCall = next
+	} else {
+		c.lastCall = now
+	}
 	c.mu.Unlock()
 
 	if wait <= 0 {
-		c.mu.Lock()
-		c.lastCall = time.Now()
-		c.mu.Unlock()
 		return nil
 	}
 
@@ -192,9 +206,6 @@ func (c *Client) delayCall(ctx context.Context) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-t.C:
-		c.mu.Lock()
-		c.lastCall = time.Now()
-		c.mu.Unlock()
 		return nil
 	}
 }
