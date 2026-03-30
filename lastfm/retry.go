@@ -14,9 +14,10 @@ const (
 )
 
 // backoffTimerFn returns a (channel, stopFunc) pair for the retry backoff.
-// It is a variable so tests can inject a fake that returns a pre-fired channel
-// and a stop function that returns false, exercising the drain path without
-// relying on real wall-clock timing.
+// It is a variable so tests can inject a fake timer that can make Stop
+// return false (simulating an already-fired timer) while still allowing
+// ctx.Done() to deterministically win the select, without relying on
+// real wall-clock timing.
 var backoffTimerFn = func(d time.Duration) (<-chan time.Time, func() bool) {
 	t := time.NewTimer(d)
 	return t.C, t.Stop

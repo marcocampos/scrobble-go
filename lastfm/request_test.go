@@ -9,11 +9,12 @@ import (
 
 // newTestClient returns a Client wired to the given TLS test server.
 // The server's own Client() is used so the self-signed cert is trusted.
-func newTestClient(t *testing.T, srv *httptest.Server) *Client {
+// Additional options (e.g. WithRetry) may be passed and are applied after
+// the mandatory WithHTTPClient option.
+func newTestClient(t *testing.T, srv *httptest.Server, opts ...Option) *Client {
 	t.Helper()
-	c := NewLastFMClient("testapikey", "testapisecret",
-		WithHTTPClient(srv.Client()),
-	)
+	allOpts := append([]Option{WithHTTPClient(srv.Client())}, opts...)
+	c := NewLastFMClient("testapikey", "testapisecret", allOpts...)
 	// Point the client at the test server (TLS).
 	c.net.WSHost = srv.Listener.Addr().String()
 	c.net.WSPath = "/"
@@ -172,12 +173,7 @@ func TestAPIRequest_Execute_WithRetryOption(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewLastFMClient("testapikey", "testapisecret",
-		WithHTTPClient(srv.Client()),
-		WithRetry(2),
-	)
-	c.net.WSHost = srv.Listener.Addr().String()
-	c.net.WSPath = "/"
+	c := newTestClient(t, srv, WithRetry(2))
 
 	r := newAPIRequest(c, "artist.getInfo", map[string]string{"artist": "Iron Maiden"})
 	doc, err := r.execute(context.Background(), false)
