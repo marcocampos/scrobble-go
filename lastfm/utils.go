@@ -1,7 +1,7 @@
 package lastfm
 
 import (
-	"crypto/md5" //nolint:gosec // MD5 is required by the Last.fm API signature scheme
+	"crypto/md5" //nolint:gosec // MD5 is required by the Last.fm API for password hashing and request signing
 	"fmt"
 	"strconv"
 )
