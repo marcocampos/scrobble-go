@@ -45,8 +45,9 @@ type AlbumInfo struct {
 	Artist        string
 	MBID          string
 	URL           string
-	Listeners     int
-	Playcount     int
+	Listeners     int64
+	Playcount     int64
+	UserPlaycount int64
 	Images        map[int]string
 	TopTags       []TopItem[*Tag]
 	Tracks        []*Track
@@ -56,8 +57,14 @@ type AlbumInfo struct {
 }
 
 // GetInfo returns detailed information about the album.
+// If the client has an authenticated username, the response also includes
+// that user's personal play count (UserPlaycount).
 func (a *Album) GetInfo(ctx context.Context) (*AlbumInfo, error) {
-	doc, err := newAPIRequest(a.client, "album.getInfo", a.baseParams()).execute(ctx, true)
+	params := a.baseParams()
+	if username := a.client.net.Username; username != "" {
+		params["username"] = username
+	}
+	doc, err := newAPIRequest(a.client, "album.getInfo", params).execute(ctx, true)
 	if err != nil {
 		return nil, fmt.Errorf("Album.GetInfo: %w", err)
 	}
@@ -71,13 +78,14 @@ func (a *Album) GetInfo(ctx context.Context) (*AlbumInfo, error) {
 	}
 
 	info := &AlbumInfo{
-		Title:     extract(node, "name"),
-		Artist:    extract(node, "artist"),
-		MBID:      extract(node, "mbid"),
-		URL:       extract(node, "url"),
-		Listeners: parseInt(extract(node, "listeners")),
-		Playcount: parseInt(extract(node, "playcount")),
-		Images:    extractImages(node),
+		Title:         extract(node, "name"),
+		Artist:        extract(node, "artist"),
+		MBID:          extract(node, "mbid"),
+		URL:           extract(node, "url"),
+		Listeners:     parseInt64(extract(node, "listeners")),
+		Playcount:     parseInt64(extract(node, "playcount")),
+		UserPlaycount: parseInt64(extract(node, "userplaycount")),
+		Images:        extractImages(node),
 	}
 
 	if tagsNode := node.find("tags"); tagsNode != nil {
@@ -108,67 +116,57 @@ func (a *Album) GetInfo(ctx context.Context) (*AlbumInfo, error) {
 
 // GetMBID returns the album's MusicBrainz ID.
 func (a *Album) GetMBID(ctx context.Context) (string, error) {
-	doc, err := newAPIRequest(a.client, "album.getInfo", a.baseParams()).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return "", fmt.Errorf("Album.GetMBID: %w", err)
 	}
-	return extract(doc, "mbid"), nil
+	return info.MBID, nil
 }
 
 // GetListenerCount returns the number of Last.fm listeners.
 func (a *Album) GetListenerCount(ctx context.Context) (float64, error) {
-	doc, err := newAPIRequest(a.client, "album.getInfo", a.baseParams()).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Album.GetListenerCount: %w", err)
 	}
-	return parseNumber(extract(doc, "listeners")), nil
+	return float64(info.Listeners), nil
 }
 
 // GetPlaycount returns the total play count on Last.fm.
 func (a *Album) GetPlaycount(ctx context.Context) (float64, error) {
-	doc, err := newAPIRequest(a.client, "album.getInfo", a.baseParams()).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Album.GetPlaycount: %w", err)
 	}
-	return parseNumber(extract(doc, "playcount")), nil
+	return float64(info.Playcount), nil
 }
 
 // GetUserPlaycount returns the play count for the authenticated user.
 func (a *Album) GetUserPlaycount(ctx context.Context) (float64, error) {
-	params := a.baseParams()
-	if a.username != "" {
-		params["username"] = a.username
-	}
-	doc, err := newAPIRequest(a.client, "album.getInfo", params).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return 0, fmt.Errorf("Album.GetUserPlaycount: %w", err)
 	}
-	return parseNumber(extract(doc, "userplaycount")), nil
+	return float64(info.UserPlaycount), nil
 }
 
 // GetCoverImage returns the URL of the album cover at the given size.
 // Use one of the Size* constants.
 func (a *Album) GetCoverImage(ctx context.Context, size int) (string, error) {
-	doc, err := newAPIRequest(a.client, "album.getInfo", a.baseParams()).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return "", fmt.Errorf("Album.GetCoverImage: %w", err)
 	}
-	images := extractImages(doc)
-	return images[size], nil
+	return info.Images[size], nil
 }
 
 // GetTracks returns the tracks listed in this album.
 func (a *Album) GetTracks(ctx context.Context) ([]*Track, error) {
-	doc, err := newAPIRequest(a.client, "album.getInfo", a.baseParams()).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("Album.GetTracks: %w", err)
 	}
-	var tracks []*Track
-	for _, node := range doc.findAll("track") {
-		title := extract(node, "name")
-		tracks = append(tracks, newTrack(a.Artist.Name, title, a.client))
-	}
-	return tracks, nil
+	return info.Tracks, nil
 }
 
 // GetTopTags returns the most frequently applied tags for this album.
@@ -207,15 +205,20 @@ func (a *Album) GetWikiPublishedDate(ctx context.Context) (string, error) {
 }
 
 func (a *Album) getWiki(ctx context.Context, section string) (string, error) {
-	doc, err := newAPIRequest(a.client, "album.getInfo", a.baseParams()).execute(ctx, true)
+	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return "", fmt.Errorf("Album.GetWiki: %w", err)
 	}
-	wikiNode := doc.find("wiki")
-	if wikiNode == nil {
+	switch section {
+	case "summary":
+		return info.WikiSummary, nil
+	case "content":
+		return info.WikiContent, nil
+	case "published":
+		return info.WikiPublished, nil
+	default:
 		return "", nil
 	}
-	return extract(wikiNode, section), nil
 }
 
 // GetURL returns the Last.fm page URL for this album in the given domain/language.

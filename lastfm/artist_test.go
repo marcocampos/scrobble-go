@@ -68,9 +68,12 @@ func TestArtist_GetUserPlaycount(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(t, srv)
-	_, err := c.GetArtist("Iron Maiden").GetUserPlaycount(context.Background())
+	count, err := c.GetArtist("Iron Maiden").GetUserPlaycount(context.Background())
 	if err != nil {
 		t.Fatalf("GetUserPlaycount: %v", err)
+	}
+	if count != 42 {
+		t.Errorf("UserPlaycount = %v, want 42", count)
 	}
 }
 
