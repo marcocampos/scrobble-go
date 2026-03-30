@@ -59,6 +59,18 @@ const artistTopAlbumsXML = `<lfm status="ok">
   </topalbums>
 </lfm>`
 
+func TestArtist_GetInfo_WithUsername(t *testing.T) {
+	srv := serveXML(artistInfoXML)
+	defer srv.Close()
+
+	// WithUsername causes the username to be included in the request params.
+	c := newTestClient(t, srv, WithUsername("testuser"))
+	_, err := c.GetArtist("Iron Maiden").GetInfo(context.Background())
+	if err != nil {
+		t.Fatalf("GetInfo (with username): %v", err)
+	}
+}
+
 func TestArtist_GetInfo(t *testing.T) {
 	srv := serveXML(artistInfoXML)
 	defer srv.Close()
@@ -315,6 +327,31 @@ const recentTracksXML = `<lfm status="ok">
   </recenttracks>
 </lfm>`
 
+func TestUser_GetInfo_Subscriber(t *testing.T) {
+	// Use XML where subscriber=1 to exercise the Subscriber=true branch.
+	subscriberXML := `<lfm status="ok">
+  <user>
+    <name>premiumuser</name>
+    <realname>Premium User</realname>
+    <subscriber>1</subscriber>
+    <playcount>100</playcount>
+    <playlists>0</playlists>
+    <registered unixtime="1000000000">1 Sep 2001</registered>
+  </user>
+</lfm>`
+	srv := serveXML(subscriberXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	info, err := c.GetUser("premiumuser").GetInfo(context.Background())
+	if err != nil {
+		t.Fatalf("GetInfo: %v", err)
+	}
+	if !info.Subscriber {
+		t.Error("Subscriber should be true for subscriber=1")
+	}
+}
+
 func TestUser_GetInfo(t *testing.T) {
 	srv := serveXML(userInfoXML)
 	defer srv.Close()
@@ -335,6 +372,64 @@ func TestUser_GetInfo(t *testing.T) {
 	}
 	if info.Country != "United Kingdom" {
 		t.Errorf("Country = %q", info.Country)
+	}
+}
+
+func TestUser_GetRecentTracks_WithPage(t *testing.T) {
+	srv := serveXML(recentTracksXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	// page > 0 exercises the params["page"] branch.
+	_, err := c.GetUser("testuser").GetRecentTracks(context.Background(), 10, 2)
+	if err != nil {
+		t.Fatalf("GetRecentTracks (with page): %v", err)
+	}
+}
+
+func TestExtractTopTracks_NoArtistNode(t *testing.T) {
+	// A track with no <artist> element at all causes the fallback to extract(node, "name", 1).
+	xml := `<lfm status="ok">
+  <toptracks>
+    <track>
+      <name>The Trooper</name>
+      <playcount>500</playcount>
+    </track>
+  </toptracks>
+</lfm>`
+	srv := serveXML(xml)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	tracks, err := c.GetTopTracks(context.Background(), 0)
+	if err != nil {
+		t.Fatalf("GetTopTracks: %v", err)
+	}
+	if len(tracks) != 1 {
+		t.Fatalf("len(tracks) = %d, want 1", len(tracks))
+	}
+}
+
+func TestExtractTopAlbums_NoArtistNode(t *testing.T) {
+	// An album with no <artist> element causes the fallback to extract(node, "name", 1).
+	xml := `<lfm status="ok">
+  <topalbums>
+    <album>
+      <name>Piece of Mind</name>
+      <playcount>300</playcount>
+    </album>
+  </topalbums>
+</lfm>`
+	srv := serveXML(xml)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	albums, err := c.GetUser("testuser").GetTopAlbums(context.Background(), PeriodOverall, 0)
+	if err != nil {
+		t.Fatalf("GetTopAlbums: %v", err)
+	}
+	if len(albums) != 1 {
+		t.Fatalf("len(albums) = %d, want 1", len(albums))
 	}
 }
 
@@ -394,6 +489,41 @@ func TestClient_GetTrack(t *testing.T) {
 	}
 	if tr.Artist.Name != "Iron Maiden" {
 		t.Errorf("Artist = %q", tr.Artist.Name)
+	}
+}
+
+func TestEntityURL_NoURLTemplate(t *testing.T) {
+	// Build a client whose URLs map has no entry for "artist".
+	c := NewLastFMClient("k", "s")
+	c.net.URLs = map[string]string{} // empty - no templates at all
+	url := c.GetArtist("Iron Maiden").GetURL(DomainEnglish)
+	if url != "" {
+		t.Errorf("GetURL with no template should return empty string, got %q", url)
+	}
+}
+
+func TestEntityURL_UnknownDomainFallsBackToEnglish(t *testing.T) {
+	c := NewLastFMClient("k", "s")
+	// 9999 is not a valid domain constant; entityURL should fall back to English.
+	unknown := c.GetArtist("Iron Maiden").GetURL(9999)
+	english := c.GetArtist("Iron Maiden").GetURL(DomainEnglish)
+	if unknown == "" {
+		t.Error("GetURL with unknown domain returned empty string")
+	}
+	if unknown != english {
+		t.Errorf("unknown domain URL %q != English URL %q", unknown, english)
+	}
+}
+
+func TestURLKey_Unknown(t *testing.T) {
+	if got := urlKey(9999); got != "" {
+		t.Errorf("urlKey(9999) = %q, want %q", got, "")
+	}
+}
+
+func TestURLKey_Tag(t *testing.T) {
+	if got := urlKey(urlTag); got != "tag" {
+		t.Errorf("urlKey(urlTag) = %q, want %q", got, "tag")
 	}
 }
 

@@ -1,0 +1,17 @@
+ignore:
+  - "examples/**"
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto   # maintain current coverage or better
+        threshold: 1%  # allow up to 1% drop before failing
+    patch:
+      default:
+        target: 80%    # new/changed code must be at least 80% covered
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true  # only comment when coverage changes

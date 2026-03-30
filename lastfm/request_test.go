@@ -9,11 +9,11 @@ import (
 
 // newTestClient returns a Client wired to the given TLS test server.
 // The server's own Client() is used so the self-signed cert is trusted.
-func newTestClient(t *testing.T, srv *httptest.Server) *Client {
+// Additional options (e.g. WithUsername) may be passed; WithHTTPClient is
+// applied last so the TLS client always takes effect.
+func newTestClient(t *testing.T, srv *httptest.Server, opts ...Option) *Client {
 	t.Helper()
-	c := NewLastFMClient("testapikey", "testapisecret",
-		WithHTTPClient(srv.Client()),
-	)
+	c := NewLastFMClient("testapikey", "testapisecret", append(opts, WithHTTPClient(srv.Client()))...)
 	// Point the client at the test server (TLS).
 	c.net.WSHost = srv.Listener.Addr().String()
 	c.net.WSPath = "/"
