@@ -26,7 +26,12 @@ func (c *Client) GetUser(username string) *User { return newUser(username, c) }
 func (c *Client) GetCountry(name string) *Country { return newCountry(name, c) }
 
 // GetAuthenticatedUser returns the User for the currently authenticated account.
-func (c *Client) GetAuthenticatedUser() *User { return newUser(c.net.Username, c) }
+func (c *Client) GetAuthenticatedUser() *User {
+	c.mu.RLock()
+	username := c.net.Username
+	c.mu.RUnlock()
+	return newUser(username, c)
+}
 
 // ── MBID lookups ─────────────────────────────────────────────────────────────
 

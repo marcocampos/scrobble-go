@@ -34,8 +34,11 @@ func newAPIRequest(c *Client, method string, params map[string]string) *apiReque
 	r.params["api_key"] = c.net.APIKey
 	r.params["method"] = method
 
-	if c.net.SessionKey != "" {
-		r.params["sk"] = c.net.SessionKey
+	c.mu.RLock()
+	sk := c.net.SessionKey
+	c.mu.RUnlock()
+	if sk != "" {
+		r.params["sk"] = sk
 		r.sign()
 	}
 	return r

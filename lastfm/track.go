@@ -15,10 +15,13 @@ type Track struct {
 
 // newTrack returns a Track bound to the given client.
 func newTrack(artist, title string, c *Client) *Track {
+	c.mu.RLock()
+	username := c.net.Username
+	c.mu.RUnlock()
 	return &Track{
 		Artist:   newArtist(artist, c),
 		Title:    title,
-		username: c.net.Username,
+		username: username,
 		client:   c,
 	}
 }

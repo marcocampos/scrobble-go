@@ -125,8 +125,10 @@ func (c *Client) AuthenticateWithPassword(ctx context.Context, username, passwor
 	if err != nil {
 		return err
 	}
+	c.mu.Lock()
 	c.net.SessionKey = sk
 	c.net.Username = username
+	c.mu.Unlock()
 	return nil
 }
 
