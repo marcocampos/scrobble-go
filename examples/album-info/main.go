@@ -36,6 +36,7 @@ func main() {
 
 	info, err := al.GetInfo(ctx)
 	if err != nil {
+		cancel()
 		log.Fatalf("GetInfo: %v", err)
 	}
 

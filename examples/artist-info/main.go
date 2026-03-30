@@ -36,6 +36,7 @@ func main() {
 	// ── Core info ─────────────────────────────────────────────────────────────
 	info, err := a.GetInfo(ctx)
 	if err != nil {
+		cancel()
 		log.Fatalf("GetInfo: %v", err)
 	}
 
