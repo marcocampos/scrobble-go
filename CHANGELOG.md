@@ -11,12 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **BREAKING:** `GetListenerCount`, `GetPlaycount`, and `GetUserPlaycount` on `Artist`, `Album`, and `Track` now return `int64` instead of `float64`. This avoids silent precision loss for large counts (above 2^53) and matches the underlying `Info` struct field types.
 - **BREAKING:** `WSError.Status` changed from `string` to `int`. Use the `Status*` constants (e.g. `StatusInvalidAPIKey`) for comparisons instead of string literals.
+- **BREAKING:** `Domain`, `ImageSize` are now named types instead of bare `int`. `GetURL` methods accept `Domain`, `GetCoverImage` accepts `ImageSize`, and `Images` maps use `ImageSize` keys. Existing code using the named constants compiles unchanged.
+
+### Added
+
+- `NewMemoryCacheWithTTL(ttl)` for bounded in-memory caching with lazy expiry.
 
 ### Fixed
 
 - Eliminated redundant XML parsing on every API response (parsed once instead of twice).
 - `delayCall` now respects context cancellation instead of blocking unconditionally.
 - Concurrent rate-limited calls are now properly spaced using a reservation scheme.
+- Data race on `SessionKey` and `Username` when using `AuthenticateWithPassword` concurrently.
+- Removed dead `convertParam` function (accepted `any` but was only ever called with `string`).
 
 ## [0.2.0] - 2026-03-30
 

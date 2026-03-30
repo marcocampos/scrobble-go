@@ -49,6 +49,6 @@ func (co *Country) GetTopTracks(ctx context.Context, limit int) ([]TopItem[*Trac
 }
 
 // GetURL returns the Last.fm page URL for this country.
-func (co *Country) GetURL(domain int) string {
+func (co *Country) GetURL(domain Domain) string {
 	return entityURL(co.client, urlCountry, domain, co.Name)
 }

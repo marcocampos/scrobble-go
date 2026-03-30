@@ -38,7 +38,7 @@ type UserInfo struct {
 	Playcount  int
 	Playlists  int
 	Bootstrap  int
-	Images     map[int]string
+	Images     map[ImageSize]string
 	Registered string // Unix timestamp string
 }
 
@@ -306,6 +306,6 @@ func (u *User) GetWeeklyAlbumCharts(ctx context.Context, from, to string) ([]Top
 }
 
 // GetURL returns the Last.fm profile URL for this user.
-func (u *User) GetURL(domain int) string {
+func (u *User) GetURL(domain Domain) string {
 	return entityURL(u.client, urlUser, domain, u.Name)
 }

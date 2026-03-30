@@ -51,7 +51,7 @@ type AlbumInfo struct {
 	Listeners     int64
 	Playcount     int64
 	UserPlaycount int64
-	Images        map[int]string
+	Images        map[ImageSize]string
 	TopTags       []TopItem[*Tag]
 	Tracks        []*Track
 	WikiSummary   string
@@ -158,7 +158,7 @@ func (a *Album) GetUserPlaycount(ctx context.Context) (int64, error) {
 
 // GetCoverImage returns the URL of the album cover at the given size.
 // Use one of the Size* constants.
-func (a *Album) GetCoverImage(ctx context.Context, size int) (string, error) {
+func (a *Album) GetCoverImage(ctx context.Context, size ImageSize) (string, error) {
 	info, err := a.GetInfo(ctx)
 	if err != nil {
 		return "", fmt.Errorf("Album.GetCoverImage: %w", err)
@@ -228,6 +228,6 @@ func (a *Album) getWiki(ctx context.Context, section string) (string, error) {
 }
 
 // GetURL returns the Last.fm page URL for this album in the given domain/language.
-func (a *Album) GetURL(domain int) string {
+func (a *Album) GetURL(domain Domain) string {
 	return entityURL(a.client, urlAlbum, domain, a.Artist.Name, a.Title)
 }

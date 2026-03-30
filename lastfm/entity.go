@@ -7,15 +7,15 @@ import (
 
 // extractImages builds a map of size constant → image URL from an XML node
 // containing <image size="...">URL</image> elements.
-func extractImages(n *xmlNode) map[int]string {
-	sizeMap := map[string]int{
+func extractImages(n *xmlNode) map[ImageSize]string {
+	sizeMap := map[string]ImageSize{
 		"small":      SizeSmall,
 		"medium":     SizeMedium,
 		"large":      SizeLarge,
 		"extralarge": SizeExtraLarge,
 		"mega":       SizeMega,
 	}
-	images := make(map[int]string)
+	images := make(map[ImageSize]string)
 	for _, imgNode := range n.findAll("image") {
 		sizeStr := imgNode.attr("size")
 		if idx, ok := sizeMap[sizeStr]; ok {
@@ -99,7 +99,7 @@ func extractTopTags(doc *xmlNode, c *Client) []TopItem[*Tag] {
 
 // entityURL returns the Last.fm URL for an entity given the client's URL
 // template for that entity type.
-func entityURL(c *Client, entityType, domain int, args ...any) string {
+func entityURL(c *Client, entityType entityKind, domain Domain, args ...any) string {
 	tmpl, ok := c.net.URLs[urlKey(entityType)]
 	if !ok {
 		return ""
@@ -111,17 +111,20 @@ func entityURL(c *Client, entityType, domain int, args ...any) string {
 	return fmt.Sprintf("https://"+domainHost+"/"+tmpl, args...)
 }
 
+// entityKind identifies an entity type for URL generation.
+type entityKind int
+
 // URL type constants for entityURL.
 const (
-	urlAlbum   = 0
-	urlArtist  = 1
-	urlCountry = 2
-	urlTag     = 3
-	urlTrack   = 4
-	urlUser    = 5
+	urlAlbum   entityKind = 0
+	urlArtist  entityKind = 1
+	urlCountry entityKind = 2
+	urlTag     entityKind = 3
+	urlTrack   entityKind = 4
+	urlUser    entityKind = 5
 )
 
-func urlKey(entityType int) string {
+func urlKey(entityType entityKind) string {
 	switch entityType {
 	case urlAlbum:
 		return "album"

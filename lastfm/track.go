@@ -53,7 +53,7 @@ type TrackInfo struct {
 	Playcount     int64
 	UserPlaycount int64
 	Duration      int // seconds
-	Images        map[int]string
+	Images        map[ImageSize]string
 	TopTags       []TopItem[*Tag]
 	WikiSummary   string
 	WikiContent   string
@@ -260,6 +260,6 @@ func (t *Track) getWiki(ctx context.Context, section string) (string, error) {
 }
 
 // GetURL returns the Last.fm page URL for this track in the given domain/language.
-func (t *Track) GetURL(domain int) string {
+func (t *Track) GetURL(domain Domain) string {
 	return entityURL(t.client, urlTrack, domain, t.Artist.Name, t.Title)
 }

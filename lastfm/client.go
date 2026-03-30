@@ -25,7 +25,7 @@ type network struct {
 	SessionKey   string
 	Username     string
 	PasswordHash string
-	DomainNames  map[int]string
+	DomainNames  map[Domain]string
 	URLs         map[string]string
 }
 
@@ -122,7 +122,7 @@ func NewLastFMClient(apiKey, apiSecret string, opts ...Option) *Client {
 		WSPath:    "/2.0/",
 		APIKey:    apiKey,
 		APISecret: apiSecret,
-		DomainNames: map[int]string{
+		DomainNames: map[Domain]string{
 			DomainEnglish:    "www.last.fm",
 			DomainGerman:     "www.last.fm/de",
 			DomainSpanish:    "www.last.fm/es",
@@ -157,7 +157,7 @@ func NewLibreFMClient(apiKey, apiSecret string, opts ...Option) *Client {
 		WSPath:    "/2.0/",
 		APIKey:    apiKey,
 		APISecret: apiSecret,
-		DomainNames: map[int]string{
+		DomainNames: map[Domain]string{
 			DomainEnglish:    "libre.fm",
 			DomainGerman:     "libre.fm",
 			DomainSpanish:    "libre.fm",
