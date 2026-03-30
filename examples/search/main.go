@@ -42,7 +42,6 @@ func main() {
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 
 	fmt.Printf("Searching for %s: %q\n\n", *searchType, *query)
 
@@ -54,8 +53,10 @@ func main() {
 	case "track":
 		searchTracks(ctx, client, *artist, *query, *pages)
 	default:
+		cancel()
 		log.Fatalf("unknown search type %q — must be artist, album, or track", *searchType)
 	}
+	cancel()
 }
 
 func searchArtists(ctx context.Context, client *lastfm.Client, query string, pages int) {

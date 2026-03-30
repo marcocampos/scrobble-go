@@ -37,7 +37,6 @@ func main() {
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 
 	fmt.Printf("Authenticating as %q...\n", username)
 	if err := client.AuthenticateWithPassword(ctx, username, passwordHash); err != nil {
@@ -87,6 +86,7 @@ func main() {
 	for _, t := range tracks {
 		fmt.Printf("  %s – %s\n", t.Track.Artist.Name, t.Track.Title)
 	}
+	cancel()
 }
 
 func mustEnv(key string) string {

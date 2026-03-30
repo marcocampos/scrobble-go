@@ -29,7 +29,6 @@ func main() {
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 
 	a := client.GetArtist(*artistName)
 
@@ -94,6 +93,7 @@ func main() {
 			fmt.Printf("  %-40s %s plays\n", t.Item.Title, formatInt(int64(t.Weight)))
 		}
 	}
+	cancel()
 }
 
 func mustEnv(key string) string {

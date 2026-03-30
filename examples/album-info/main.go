@@ -30,7 +30,6 @@ func main() {
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
 
 	al := client.GetAlbum(*artistName, *albumName)
 
@@ -76,6 +75,7 @@ func main() {
 		}
 		fmt.Printf("\nWiki summary:\n  %s\n", summary)
 	}
+	cancel()
 }
 
 func mustEnv(key string) string {

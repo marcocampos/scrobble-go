@@ -33,13 +33,13 @@ func main() {
 	)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
 
 	u := client.GetUser(*username)
 
 	// ── Profile ───────────────────────────────────────────────────────────────
 	info, err := u.GetInfo(ctx)
 	if err != nil {
+		cancel()
 		log.Fatalf("GetInfo: %v", err)
 	}
 
@@ -106,6 +106,7 @@ func main() {
 			fmt.Printf("  %s – %s\n", lt.Track.Artist.Name, lt.Track.Title)
 		}
 	}
+	cancel()
 }
 
 func mustEnv(key string) string {
