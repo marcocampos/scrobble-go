@@ -34,7 +34,7 @@ type ArtistInfo struct {
 	Listeners     int64
 	Playcount     int64
 	UserPlaycount int64
-	Images        map[int]string
+	Images        map[ImageSize]string
 	TopTags       []TopItem[*Tag]
 	BioSummary    string
 	BioContent    string
@@ -202,6 +202,6 @@ func (a *Artist) GetTopTracks(ctx context.Context, limit int) ([]TopItem[*Track]
 }
 
 // GetURL returns the Last.fm page URL for this artist in the given domain/language.
-func (a *Artist) GetURL(domain int) string {
+func (a *Artist) GetURL(domain Domain) string {
 	return entityURL(a.client, urlArtist, domain, a.Name)
 }

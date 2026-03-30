@@ -25,29 +25,35 @@ const (
 	Period12Months = "12month"
 )
 
+// Domain identifies a localised Last.fm URL variant.
+type Domain int
+
 // Domain constants for localised Last.fm URLs.
 const (
-	DomainEnglish    = 0
-	DomainGerman     = 1
-	DomainSpanish    = 2
-	DomainFrench     = 3
-	DomainItalian    = 4
-	DomainPolish     = 5
-	DomainPortuguese = 6
-	DomainSwedish    = 7
-	DomainTurkish    = 8
-	DomainRussian    = 9
-	DomainJapanese   = 10
-	DomainChinese    = 11
+	DomainEnglish    Domain = 0
+	DomainGerman     Domain = 1
+	DomainSpanish    Domain = 2
+	DomainFrench     Domain = 3
+	DomainItalian    Domain = 4
+	DomainPolish     Domain = 5
+	DomainPortuguese Domain = 6
+	DomainSwedish    Domain = 7
+	DomainTurkish    Domain = 8
+	DomainRussian    Domain = 9
+	DomainJapanese   Domain = 10
+	DomainChinese    Domain = 11
 )
+
+// ImageSize identifies the resolution of a cover image.
+type ImageSize int
 
 // Size constants for cover images.
 const (
-	SizeSmall      = 0
-	SizeMedium     = 1
-	SizeLarge      = 2
-	SizeExtraLarge = 3
-	SizeMega       = 4
+	SizeSmall      ImageSize = 0
+	SizeMedium     ImageSize = 1
+	SizeLarge      ImageSize = 2
+	SizeExtraLarge ImageSize = 3
+	SizeMega       ImageSize = 4
 )
 
 // Image ordering constants.
