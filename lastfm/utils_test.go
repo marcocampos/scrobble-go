@@ -57,3 +57,23 @@ func TestParseInt(t *testing.T) {
 		}
 	}
 }
+
+func TestParseInt64(t *testing.T) {
+	tests := []struct {
+		input string
+		want  int64
+	}{
+		{"", 0},
+		{"0", 0},
+		{"42", 42},
+		{"-7", -7},
+		{"9999999999", 9999999999},
+		{"notanumber", 0},
+	}
+	for _, tt := range tests {
+		got := parseInt64(tt.input)
+		if got != tt.want {
+			t.Errorf("parseInt64(%q) = %v, want %v", tt.input, got, tt.want)
+		}
+	}
+}

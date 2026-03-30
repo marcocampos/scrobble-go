@@ -38,3 +38,17 @@ func parseInt(s string) int {
 	}
 	return v
 }
+
+// parseInt64 converts a string to int64.
+// Returns 0 if the string is empty or cannot be parsed.
+// Use this for large counters (listeners, playcounts) to avoid int overflow on 32-bit platforms.
+func parseInt64(s string) int64 {
+	if s == "" {
+		return 0
+	}
+	v, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return v
+}

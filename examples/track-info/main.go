@@ -98,7 +98,7 @@ func orNone(s string) string {
 	return s
 }
 
-func formatInt(n int) string {
+func formatInt(n int64) string {
 	// Simple thousands separator.
 	s := fmt.Sprintf("%d", n)
 	if len(s) <= 3 {

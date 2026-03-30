@@ -92,9 +92,12 @@ func TestTrack_GetUserPlaycount(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(t, srv)
-	_, err := c.GetTrack("Iron Maiden", "The Nomad").GetUserPlaycount(context.Background())
+	count, err := c.GetTrack("Iron Maiden", "The Nomad").GetUserPlaycount(context.Background())
 	if err != nil {
 		t.Fatalf("GetUserPlaycount: %v", err)
+	}
+	if count != 7 {
+		t.Errorf("UserPlaycount = %v, want 7", count)
 	}
 }
 

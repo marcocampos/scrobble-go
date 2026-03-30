@@ -79,7 +79,7 @@ func main() {
 	} else if len(albums) > 0 {
 		fmt.Println("\nTop albums:")
 		for _, al := range albums {
-			fmt.Printf("  %-40s %s plays\n", al.Item.Title, formatInt(int(al.Weight)))
+			fmt.Printf("  %-40s %s plays\n", al.Item.Title, formatInt(int64(al.Weight)))
 		}
 	}
 
@@ -90,7 +90,7 @@ func main() {
 	} else if len(tracks) > 0 {
 		fmt.Println("\nTop tracks:")
 		for _, t := range tracks {
-			fmt.Printf("  %-40s %s plays\n", t.Item.Title, formatInt(int(t.Weight)))
+			fmt.Printf("  %-40s %s plays\n", t.Item.Title, formatInt(int64(t.Weight)))
 		}
 	}
 }
@@ -110,7 +110,7 @@ func orNone(s string) string {
 	return s
 }
 
-func formatInt(n int) string {
+func formatInt(n int64) string {
 	s := fmt.Sprintf("%d", n)
 	if len(s) <= 3 {
 		return s
