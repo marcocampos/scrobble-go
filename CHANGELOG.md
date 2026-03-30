@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **BREAKING:** `GetListenerCount`, `GetPlaycount`, and `GetUserPlaycount` on `Artist`, `Album`, and `Track` now return `int64` instead of `float64`. This avoids silent precision loss for large counts (above 2^53) and matches the underlying `Info` struct field types.
 - **BREAKING:** `WSError.Status` changed from `string` to `int`. Use the `Status*` constants (e.g. `StatusInvalidAPIKey`) for comparisons instead of string literals.
-- **BREAKING:** `Domain`, `ImageSize` are now named types instead of bare `int`. `GetURL` methods accept `Domain`, `GetCoverImage` accepts `ImageSize`, and `Images` maps use `ImageSize` keys. Existing code using the named constants compiles unchanged.
+- **BREAKING:** `Domain`, `ImageSize` are now named types instead of bare `int`. `GetURL` methods accept `Domain`, `GetCoverImage` accepts `ImageSize`, and `Images` maps use `ImageSize` keys. Existing code that passes the provided constants into these APIs should compile unchanged, but code treating them as plain `int` values may require explicit conversion.
 
 ### Added
 
