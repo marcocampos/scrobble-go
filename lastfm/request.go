@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -192,7 +193,7 @@ func (r *apiRequest) download(ctx context.Context) (string, *xmlNode, error) {
 		resp.StatusCode == http.StatusServiceUnavailable ||
 		resp.StatusCode == http.StatusGatewayTimeout {
 		return "", nil, &WSError{
-			Status:      fmt.Sprintf("%d", resp.StatusCode),
+			Status:      resp.StatusCode,
 			Details:     fmt.Sprintf("API connection failed with HTTP %d", resp.StatusCode),
 			networkName: r.client.net.Name,
 		}
@@ -245,8 +246,9 @@ func checkAPIErrors(body, networkName string) (*xmlNode, error) {
 			UnderlyingError: fmt.Errorf("status=%q but no <error> element found", doc.attr("status")),
 		}
 	}
+	code, _ := strconv.Atoi(errEl.attr("code"))
 	return nil, &WSError{
-		Status:      errEl.attr("code"),
+		Status:      code,
 		Details:     strings.TrimSpace(errEl.Content),
 		networkName: networkName,
 	}

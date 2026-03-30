@@ -164,8 +164,8 @@ func TestCheckAPIErrors_WSError(t *testing.T) {
 	default:
 		t.Fatalf("expected *WSError, got %T: %v", err, err)
 	}
-	if wsErr.Status != "10" {
-		t.Errorf("WSError.Status = %q, want %q", wsErr.Status, "10")
+	if wsErr.Status != StatusInvalidAPIKey {
+		t.Errorf("WSError.Status = %d, want %d", wsErr.Status, StatusInvalidAPIKey)
 	}
 	if wsErr.Details == "" {
 		t.Error("WSError.Details should not be empty")

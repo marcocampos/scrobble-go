@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"math/rand/v2"
+	"net/http"
 	"time"
 )
 
@@ -73,7 +74,7 @@ func isRetriable(err error) bool {
 	var wsErr *WSError
 	if errors.As(err, &wsErr) {
 		switch wsErr.Status {
-		case "502", "503", "504":
+		case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
 			return true
 		}
 	}

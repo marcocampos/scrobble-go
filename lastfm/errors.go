@@ -34,15 +34,15 @@ const (
 
 // WSError is returned when the Last.fm web service responds with an error.
 type WSError struct {
-	// Status is the numeric error code string from the API (e.g. "10").
-	Status string
+	// Status is the numeric error code from the API (e.g. StatusInvalidAPIKey).
+	Status int
 	// Details is the human-readable error message from the API.
 	Details     string
 	networkName string
 }
 
 func (e *WSError) Error() string {
-	return fmt.Sprintf("last.fm API error %s: %s", e.Status, e.Details)
+	return fmt.Sprintf("last.fm API error %d: %s", e.Status, e.Details)
 }
 
 // MalformedResponseError is returned when the API response cannot be parsed.

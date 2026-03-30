@@ -59,7 +59,7 @@ func main() {
 		}
 
 		var wsErr *lastfm.WSError
-		if errors.As(err, &wsErr) && wsErr.Status == "14" {
+		if errors.As(err, &wsErr) && wsErr.Status == lastfm.StatusTokenUnauthorized {
 			// StatusTokenUnauthorized — user hasn't approved yet; keep polling.
 			fmt.Print(".")
 			time.Sleep(2 * time.Second)
