@@ -72,11 +72,16 @@ func isRetriable(err error) bool {
 
 // retryDelay returns the backoff duration for a given attempt index (0-based),
 // applying exponential growth and ±retryJitter random jitter.
-// The base delay is capped at retryMaxDelay to prevent overflow for large attempt values.
+// The base delay is capped at retryMaxDelay; the loop-based doubling avoids
+// any integer overflow regardless of the attempt value.
 func retryDelay(attempt int) time.Duration {
-	base := retryBaseDelay * (1 << uint(attempt)) // 100ms, 200ms, 400ms, …
-	if base <= 0 || base > retryMaxDelay {
-		base = retryMaxDelay
+	base := retryBaseDelay
+	for range attempt {
+		if base >= retryMaxDelay/2 {
+			base = retryMaxDelay
+			break
+		}
+		base *= 2
 	}
 	jitter := float64(base) * retryJitter * (2*rand.Float64() - 1)
 	return base + time.Duration(jitter)

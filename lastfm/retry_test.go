@@ -3,6 +3,7 @@ package lastfm
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -111,10 +112,13 @@ func TestIsRetriable(t *testing.T) {
 	}{
 		{"nil", nil, false},
 		{"NetworkError", &NetworkError{NetworkName: "x", UnderlyingError: errors.New("x")}, true},
+		{"wrapped NetworkError", fmt.Errorf("outer: %w", &NetworkError{NetworkName: "x", UnderlyingError: errors.New("x")}), true},
 		{"WSError 502", &WSError{Status: "502"}, true},
 		{"WSError 503", &WSError{Status: "503"}, true},
 		{"WSError 504", &WSError{Status: "504"}, true},
+		{"wrapped WSError 503", fmt.Errorf("outer: %w", &WSError{Status: "503"}), true},
 		{"WSError 6 (invalid params)", &WSError{Status: "6"}, false},
+		{"wrapped WSError non-retriable", fmt.Errorf("outer: %w", &WSError{Status: "6"}), false},
 		{"generic error", errors.New("something"), false},
 	}
 	for _, tt := range tests {
