@@ -84,7 +84,7 @@ func (r *apiRequest) signature() string {
 	return fmt.Sprintf("%x", h)
 }
 
-// cacheKey returns a stable SHA-1 hex key derived from the request params,
+// cacheKey returns a stable MD5 hex key derived from the request params,
 // excluding auth-only fields (api_sig, api_key, sk).
 func (r *apiRequest) cacheKey() string {
 	keys := make([]string, 0, len(r.params))
