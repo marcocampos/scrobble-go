@@ -223,6 +223,70 @@ func TestTrackSearch_All_YieldsAllResults(t *testing.T) {
 	}
 }
 
+func TestAlbumSearch_All_StopsOnEarlyReturn(t *testing.T) {
+	srv := servePages(albumSearchXML, emptyAlbumSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	count := 0
+	for _, err := range c.SearchForAlbum("dance of death").All(context.Background()) {
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		count++
+		break // stop after first result
+	}
+	if count != 1 {
+		t.Errorf("expected early exit after 1 result, got %d", count)
+	}
+}
+
+func TestAlbumSearch_All_PropagatesError(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	for _, err := range c.SearchForAlbum("dance of death").All(context.Background()) {
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		return
+	}
+	t.Fatal("expected at least one iteration with an error")
+}
+
+func TestTrackSearch_All_StopsOnEarlyReturn(t *testing.T) {
+	srv := servePages(trackSearchXML, emptyTrackSearchXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	count := 0
+	for _, err := range c.SearchForTrack("", "nomad").All(context.Background()) {
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		count++
+		break // stop after first result
+	}
+	if count != 1 {
+		t.Errorf("expected early exit after 1 result, got %d", count)
+	}
+}
+
+func TestTrackSearch_All_PropagatesError(t *testing.T) {
+	srv := serveXML(sampleErrorXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	for _, err := range c.SearchForTrack("", "nomad").All(context.Background()) {
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+		return
+	}
+	t.Fatal("expected at least one iteration with an error")
+}
+
 func TestArtistSearch_All_StopsOnEarlyReturn(t *testing.T) {
 	srv := servePages(artistSearchXML, emptyArtistSearchXML)
 	defer srv.Close()
