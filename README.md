@@ -16,7 +16,7 @@ A port of [pylast](https://github.com/pylast/pylast) to Go.
 go get github.com/marcocampos/scrobble-go/lastfm
 ```
 
-Requires Go 1.23 or later.
+Requires Go 1.26 or later.
 
 ## Quick start
 
