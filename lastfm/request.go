@@ -112,18 +112,20 @@ func (r *apiRequest) cacheKey() string {
 func (r *apiRequest) execute(ctx context.Context, cacheable bool) (*xmlNode, error) {
 	slog.Debug("last.fm API call", "method", r.method)
 
+	var cacheKey string
 	if cacheable && r.client.cache != nil {
-		key := r.cacheKey()
-		if cached, ok := r.client.cache.Get(key); ok {
+		cacheKey = r.cacheKey()
+		if cached, ok := r.client.cache.Get(cacheKey); ok {
 			slog.Debug("cache hit", "method", r.method)
 			return parseXMLResponse(cached)
 		}
 	}
 
 	var body string
+	var doc *xmlNode
 	fetch := func() error {
 		var ferr error
-		body, ferr = r.download(ctx)
+		body, doc, ferr = r.download(ctx)
 		return ferr
 	}
 
@@ -136,15 +138,17 @@ func (r *apiRequest) execute(ctx context.Context, cacheable bool) (*xmlNode, err
 		return nil, err
 	}
 
-	if cacheable && r.client.cache != nil {
-		r.client.cache.Set(r.cacheKey(), body)
+	if cacheKey != "" {
+		r.client.cache.Set(cacheKey, body)
 	}
 
-	return parseXMLResponse(body)
+	return doc, nil
 }
 
-// download makes the actual HTTP POST request and returns the raw body.
-func (r *apiRequest) download(ctx context.Context) (string, error) {
+// download makes the actual HTTP POST request and returns the raw body and
+// the parsed XML tree. The XML is parsed once inside checkAPIErrors and
+// reused, avoiding a redundant second parse in execute.
+func (r *apiRequest) download(ctx context.Context) (string, *xmlNode, error) {
 	if r.client.rateLimit {
 		r.client.delayCall()
 	}
@@ -163,7 +167,7 @@ func (r *apiRequest) download(ctx context.Context) (string, error) {
 		strings.NewReader(formData.Encode()),
 	)
 	if err != nil {
-		return "", &NetworkError{
+		return "", nil, &NetworkError{
 			NetworkName:     r.client.net.Name,
 			UnderlyingError: err,
 		}
@@ -174,7 +178,7 @@ func (r *apiRequest) download(ctx context.Context) (string, error) {
 
 	resp, err := r.client.httpClient.Do(req)
 	if err != nil {
-		return "", &NetworkError{
+		return "", nil, &NetworkError{
 			NetworkName:     r.client.net.Name,
 			UnderlyingError: err,
 		}
@@ -185,7 +189,7 @@ func (r *apiRequest) download(ctx context.Context) (string, error) {
 		resp.StatusCode == http.StatusBadGateway ||
 		resp.StatusCode == http.StatusServiceUnavailable ||
 		resp.StatusCode == http.StatusGatewayTimeout {
-		return "", &WSError{
+		return "", nil, &WSError{
 			Status:      fmt.Sprintf("%d", resp.StatusCode),
 			Details:     fmt.Sprintf("API connection failed with HTTP %d", resp.StatusCode),
 			networkName: r.client.net.Name,
@@ -194,25 +198,26 @@ func (r *apiRequest) download(ctx context.Context) (string, error) {
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", &NetworkError{
+		return "", nil, &NetworkError{
 			NetworkName:     r.client.net.Name,
 			UnderlyingError: err,
 		}
 	}
 	body := string(raw)
 
-	if err := checkAPIErrors(body, r.client.net.Name); err != nil {
-		return "", err
+	doc, err := checkAPIErrors(body, r.client.net.Name)
+	if err != nil {
+		return "", nil, err
 	}
-	return body, nil
+	return body, doc, nil
 }
 
-// checkAPIErrors parses the XML response and returns a WSError if the API
-// reports a failure, or a MalformedResponseError if the XML is invalid.
-func checkAPIErrors(body, networkName string) error {
+// checkAPIErrors parses the XML response and returns the parsed document on
+// success, or a WSError / MalformedResponseError on failure.
+func checkAPIErrors(body, networkName string) (*xmlNode, error) {
 	doc, err := parseXMLResponse(body)
 	if err != nil {
-		return &MalformedResponseError{
+		return nil, &MalformedResponseError{
 			NetworkName:     networkName,
 			UnderlyingError: err,
 		}
@@ -228,17 +233,17 @@ func checkAPIErrors(body, networkName string) error {
 	}
 
 	if doc.attr("status") == "ok" {
-		return nil
+		return doc, nil
 	}
 
 	errEl := doc.find("error")
 	if errEl == nil {
-		return &MalformedResponseError{
+		return nil, &MalformedResponseError{
 			NetworkName:     networkName,
 			UnderlyingError: fmt.Errorf("status=%q but no <error> element found", doc.attr("status")),
 		}
 	}
-	return &WSError{
+	return nil, &WSError{
 		Status:      errEl.attr("code"),
 		Details:     strings.TrimSpace(errEl.Content),
 		networkName: networkName,

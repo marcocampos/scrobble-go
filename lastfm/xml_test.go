@@ -140,16 +140,22 @@ func TestXMLNode_Find(t *testing.T) {
 }
 
 func TestCheckAPIErrors_OK(t *testing.T) {
-	err := checkAPIErrors(sampleArtistXML, "Last.fm")
+	doc, err := checkAPIErrors(sampleArtistXML, "Last.fm")
 	if err != nil {
 		t.Errorf("checkAPIErrors on OK response: unexpected error: %v", err)
+	}
+	if doc == nil {
+		t.Error("checkAPIErrors on OK response: expected non-nil doc")
 	}
 }
 
 func TestCheckAPIErrors_WSError(t *testing.T) {
-	err := checkAPIErrors(sampleErrorXML, "Last.fm")
+	doc, err := checkAPIErrors(sampleErrorXML, "Last.fm")
 	if err == nil {
 		t.Fatal("checkAPIErrors on error response: expected error, got nil")
+	}
+	if doc != nil {
+		t.Error("checkAPIErrors on error response: expected nil doc")
 	}
 	var wsErr *WSError
 	switch e := err.(type) {
@@ -167,7 +173,7 @@ func TestCheckAPIErrors_WSError(t *testing.T) {
 }
 
 func TestCheckAPIErrors_MalformedXML(t *testing.T) {
-	err := checkAPIErrors("<broken", "Last.fm")
+	_, err := checkAPIErrors("<broken", "Last.fm")
 	if err == nil {
 		t.Fatal("expected error for malformed XML, got nil")
 	}
@@ -179,7 +185,7 @@ func TestCheckAPIErrors_MalformedXML(t *testing.T) {
 func TestCheckAPIErrors_StatusNotOkNoErrorElement(t *testing.T) {
 	// status="failed" but no <error> child element.
 	xml := `<lfm status="failed"></lfm>`
-	err := checkAPIErrors(xml, "Last.fm")
+	_, err := checkAPIErrors(xml, "Last.fm")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -195,7 +201,7 @@ func TestCheckAPIErrors_DebugLogging(t *testing.T) {
 	slog.SetDefault(slog.New(h))
 	defer slog.SetDefault(old)
 
-	if err := checkAPIErrors(sampleArtistXML, "Last.fm"); err != nil {
+	if _, err := checkAPIErrors(sampleArtistXML, "Last.fm"); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
@@ -208,7 +214,7 @@ func TestCheckAPIErrors_DebugLogging_LongBody(t *testing.T) {
 	defer slog.SetDefault(old)
 
 	body := `<lfm status="ok"><data>` + strings.Repeat("x", 600) + `</data></lfm>`
-	if err := checkAPIErrors(body, "Last.fm"); err != nil {
+	if _, err := checkAPIErrors(body, "Last.fm"); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
