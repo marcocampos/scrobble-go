@@ -1,6 +1,7 @@
 package lastfm
 
 import (
+	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -48,9 +49,9 @@ func TestDelayCall_EnforcesGap(t *testing.T) {
 		t.Skip("skipping timing test in short mode")
 	}
 	c := NewLastFMClient("k", "s", WithRateLimit())
-	c.delayCall() // prime lastCall
+	_ = c.delayCall(context.Background()) // prime lastCall
 	start := time.Now()
-	c.delayCall() // should block for ~200ms
+	_ = c.delayCall(context.Background()) // should block for ~200ms
 	if elapsed := time.Since(start); elapsed < 150*time.Millisecond {
 		t.Errorf("delayCall gap = %v, want ≥ 150ms", elapsed)
 	}
@@ -61,5 +62,21 @@ func TestDelayCall_NoRateLimit(t *testing.T) {
 	// delayCall always enforces the gap when called directly; callers
 	// in the request path guard it with c.rateLimit. Call once to
 	// verify it does not panic on a zero-value lastCall.
-	c.delayCall()
+	_ = c.delayCall(context.Background())
+}
+
+func TestDelayCall_RespectsContextCancellation(t *testing.T) {
+	c := NewLastFMClient("k", "s", WithRateLimit())
+	_ = c.delayCall(context.Background()) // prime lastCall
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // cancel immediately
+
+	err := c.delayCall(ctx)
+	if err == nil {
+		t.Fatal("expected context cancellation error, got nil")
+	}
+	if err != context.Canceled {
+		t.Errorf("expected context.Canceled, got %v", err)
+	}
 }

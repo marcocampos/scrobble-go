@@ -150,7 +150,9 @@ func (r *apiRequest) execute(ctx context.Context, cacheable bool) (*xmlNode, err
 // reused, avoiding a redundant second parse in execute.
 func (r *apiRequest) download(ctx context.Context) (string, *xmlNode, error) {
 	if r.client.rateLimit {
-		r.client.delayCall()
+		if err := r.client.delayCall(ctx); err != nil {
+			return "", nil, err
+		}
 	}
 
 	formData := make(url.Values, len(r.params))

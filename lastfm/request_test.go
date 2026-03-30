@@ -206,6 +206,33 @@ func TestAPIRequest_Execute_WithRetryOption(t *testing.T) {
 	}
 }
 
+func TestAPIRequest_Execute_RateLimitContextCancellation(t *testing.T) {
+	srv := serveXML(sampleArtistXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	c.rateLimit = true
+
+	// Prime lastCall so the next delayCall will need to wait.
+	r := newAPIRequest(c, "artist.getInfo", map[string]string{"artist": "Iron Maiden"})
+	if _, err := r.execute(context.Background(), false); err != nil {
+		t.Fatalf("prime call: %v", err)
+	}
+
+	// Cancel context immediately — delayCall should return ctx.Err().
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	r2 := newAPIRequest(c, "artist.getInfo", map[string]string{"artist": "Iron Maiden"})
+	_, err := r2.execute(ctx, false)
+	if err == nil {
+		t.Fatal("expected context cancellation error, got nil")
+	}
+	if err != context.Canceled {
+		t.Errorf("expected context.Canceled, got %v", err)
+	}
+}
+
 func TestConvertParam(t *testing.T) {
 	tests := []struct {
 		input any

@@ -1,6 +1,7 @@
 package lastfm
 
 import (
+	"context"
 	"net/http"
 	"sync"
 	"time"
@@ -170,13 +171,30 @@ func NewLibreFMClient(apiKey, apiSecret string, opts ...Option) *Client {
 	return newClient(net, opts)
 }
 
-// delayCall sleeps until at least delayTime has elapsed since the last call.
-// It is a no-op when rate limiting is disabled.
-func (c *Client) delayCall() {
+// delayCall sleeps until at least delayTime has elapsed since the last call,
+// honouring the provided context. Returns ctx.Err() if the context is
+// cancelled before the delay expires.
+func (c *Client) delayCall(ctx context.Context) error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-	if since := time.Since(c.lastCall); since < delayTime {
-		time.Sleep(delayTime - since)
+	wait := delayTime - time.Since(c.lastCall)
+	c.mu.Unlock()
+
+	if wait <= 0 {
+		c.mu.Lock()
+		c.lastCall = time.Now()
+		c.mu.Unlock()
+		return nil
 	}
-	c.lastCall = time.Now()
+
+	t := time.NewTimer(wait)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		c.mu.Lock()
+		c.lastCall = time.Now()
+		c.mu.Unlock()
+		return nil
+	}
 }
