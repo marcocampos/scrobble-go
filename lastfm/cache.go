@@ -31,7 +31,7 @@ type memoryCacheEntry struct {
 type MemoryCache struct {
 	mu    sync.RWMutex
 	store map[string]memoryCacheEntry
-	ttl   time.Duration // 0 means no expiry
+	ttl   time.Duration // <= 0 means no expiry
 }
 
 // NewMemoryCache returns an initialised MemoryCache with no TTL.
@@ -60,10 +60,19 @@ func (c *MemoryCache) Get(key string) (string, bool) {
 	if !ok {
 		return "", false
 	}
-	if !e.expiresAt.IsZero() && time.Now().After(e.expiresAt) {
-		c.mu.Lock()
+	if e.expiresAt.IsZero() || !time.Now().After(e.expiresAt) {
+		return e.value, true
+	}
+
+	// Re-check under write lock to avoid deleting a freshly-updated value.
+	c.mu.Lock()
+	e, ok = c.store[key]
+	if ok && !e.expiresAt.IsZero() && time.Now().After(e.expiresAt) {
 		delete(c.store, key)
-		c.mu.Unlock()
+		ok = false
+	}
+	c.mu.Unlock()
+	if !ok {
 		return "", false
 	}
 	return e.value, true

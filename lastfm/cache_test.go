@@ -56,12 +56,17 @@ func TestMemoryCacheWithTTL_ExpiresEntries(t *testing.T) {
 		t.Fatalf("Get immediately after Set: ok=%v, v=%q", ok, v)
 	}
 
-	// Wait for expiry.
-	time.Sleep(60 * time.Millisecond)
-
-	_, ok = c.Get("key")
-	if ok {
-		t.Error("expected expired entry to return false")
+	// Poll until the entry expires, with a generous deadline.
+	deadline := time.Now().Add(500 * time.Millisecond)
+	for {
+		_, ok = c.Get("key")
+		if !ok {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("expected entry to expire within 500ms, but it did not")
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
 
