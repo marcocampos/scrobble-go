@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 // newTestClient returns a Client wired to the given TLS test server.
@@ -203,6 +204,32 @@ func TestAPIRequest_Execute_WithRetryOption(t *testing.T) {
 	}
 	if calls != 2 {
 		t.Errorf("expected 2 server calls (1 retry), got %d", calls)
+	}
+}
+
+func TestAPIRequest_Execute_RateLimitContextCancellation(t *testing.T) {
+	srv := serveXML(sampleArtistXML)
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	c.rateLimit = true
+
+	// Set lastCall to now so delayCall will need to wait the full delay.
+	c.mu.Lock()
+	c.lastCall = time.Now()
+	c.mu.Unlock()
+
+	// Cancel context immediately — delayCall should return ctx.Err().
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	r := newAPIRequest(c, "artist.getInfo", map[string]string{"artist": "Iron Maiden"})
+	_, err := r.execute(ctx, false)
+	if err == nil {
+		t.Fatal("expected context cancellation error, got nil")
+	}
+	if err != context.Canceled {
+		t.Errorf("expected context.Canceled, got %v", err)
 	}
 }
 
